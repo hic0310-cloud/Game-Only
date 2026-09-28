@@ -1,0 +1,2338 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>13번째 밤</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="13번째 밤">
+<meta name="theme-color" content="#10131C">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Gowun+Dodum&display=swap">
+<style>
+:root{
+  --ink:#2B2318; --bg:#E2D4AC; --panel:#CBB98C; --panel2:#BDAC7D; --line:#9C8C61;
+  --accent:#8B3A2B; --accent-ink:#F3E7CE; --good:#4C5B3D; --gold:#8A631F;
+  --vet1:#2E6DA4; --vet2:#7A3FA0;
+  --t-tree:#7FA06A; --t-rock:#A39C8C; --t-water:#6E9CC4; --t-wall:#B08A5E;
+  --shadow: 0 2px 0 rgba(43,35,24,.18);
+  --safe-t: env(safe-area-inset-top, 0px); --safe-b: env(safe-area-inset-bottom, 0px);
+  color-scheme: light;
+}
+:root[data-mode="night"]{
+  --ink:#E8E2D0; --bg:#10131C; --panel:#1A2032; --panel2:#242C44; --line:#3A4260;
+  --accent:#C4432B; --accent-ink:#1A0E0A; --good:#6FA184; --gold:#D0A23F;
+  --vet1:#6FB4E8; --vet2:#C9A0FA;
+  --t-tree:#2C4A31; --t-rock:#454650; --t-water:#1E3E62; --t-wall:#5A4330;
+  --shadow: 0 2px 0 rgba(0,0,0,.4);
+  color-scheme: dark;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+html{scroll-padding-top:var(--safe-t);}
+body{
+  -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; touch-action:manipulation;
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:'Gowun Dodum','Noto Sans KR',sans-serif;
+  padding-top:var(--safe-t); padding-bottom:var(--safe-b);
+  min-height:100%;
+  transition:background .6s ease, color .6s ease;
+  overscroll-behavior-y:none;
+}
+.num, .hud, h1,h2,h3, button, .badge, .stat-num{ font-family:'Teko','Gowun Dodum',sans-serif; }
+button{ font-family:inherit; }
+
+#app{ max-width:480px; margin:0 auto; min-height:100%; display:flex; flex-direction:column; position:relative; }
+
+/* ---------- 공통 ---------- */
+.screen{ padding:14px 14px calc(14px + var(--safe-b)); display:flex; flex-direction:column; gap:12px; flex:1; }
+.topbar{
+  position:sticky; top:var(--safe-t); z-index:5; background:var(--bg); padding:10px 14px 8px;
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  border-bottom:1px solid var(--line);
+}
+.title-lg{ font-size:30px; line-height:1; letter-spacing:.02em; margin:0; }
+.title-md{ font-size:23px; line-height:1.05; margin:0; }
+.sub{ opacity:.72; font-size:13px; margin:2px 0 0; }
+
+.res-pill{ display:flex; align-items:center; gap:4px; background:var(--panel); border:1px solid var(--line); border-radius:999px; padding:4px 10px 4px 8px; font-size:15px; }
+.res-row{ display:flex; gap:6px; flex-wrap:wrap; }
+.res-num{ font-size:19px; font-weight:600; }
+
+.bar{ height:9px; border-radius:5px; background:var(--panel2); border:1px solid var(--line); overflow:hidden; }
+.bar > i{ display:block; height:100%; background:var(--good); transition:width .35s ease; }
+.bar.hp-house > i{ background:var(--accent); }
+.bar-label{ display:flex; justify-content:space-between; font-size:12px; opacity:.75; margin-bottom:2px; }
+
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px; box-shadow:var(--shadow); }
+.card h3{ font-size:19px; margin:0 0 6px; }
+
+.btn{ appearance:none; border:1px solid var(--line); background:var(--panel2); color:var(--ink); border-radius:8px; padding:9px 12px; font-size:15px; font-weight:600; box-shadow:var(--shadow); }
+.btn:active{ transform:translateY(1px); box-shadow:none; }
+.btn.primary{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+.btn.ghost{ background:transparent; box-shadow:none; }
+.btn:disabled{ opacity:.42; }
+.btn-row{ display:flex; gap:8px; flex-wrap:wrap; }
+.btn.full{ width:100%; }
+
+.grid2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+.footer-cta{ position:sticky; bottom:var(--safe-b); background:linear-gradient(to top, var(--bg) 70%, transparent); padding:10px 14px calc(10px + var(--safe-b)); }
+.deploy-hint{ font-size:12px; opacity:.75; text-align:center; padding:2px 0 6px; }
+.deploy-edit{ text-decoration:underline; }
+
+/* ---------- 낮: 정찰 장소 카드 ---------- */
+.loc-card{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px; text-align:left; display:flex; flex-direction:column; gap:2px; }
+.loc-em{ font-size:26px; }
+.loc-name{ font-size:17px; font-weight:700; }
+.loc-tag{ font-size:12px; opacity:.7; }
+
+/* ---------- 이벤트 모달 ---------- */
+.modal-wrap{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:flex-end; justify-content:center; z-index:30; padding-bottom:var(--safe-b); }
+.modal{ width:100%; max-width:480px; background:var(--bg); border-radius:16px 16px 0 0; padding:18px 16px calc(16px + var(--safe-b)); display:flex; flex-direction:column; gap:10px; max-height:88vh; overflow:auto; border-top:1px solid var(--line); }
+.modal .em-big{ font-size:40px; }
+.choice-btn{ text-align:left; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:11px 12px; font-size:15px; }
+.choice-cost{ font-size:12px; opacity:.7; }
+.result-msg{ background:var(--panel2); border-radius:10px; padding:12px; font-size:15px; }
+.gain-row{ display:flex; flex-wrap:wrap; gap:6px; }
+.gain-chip{ background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:5px 9px; font-size:13px; }
+
+/* ---------- 융합 단계 구분 ---------- */
+.fuse-stage + .fuse-stage{ margin-top:10px; padding-top:10px; border-top:1px dashed var(--line); }
+.fuse-stage-h{ font-size:13px; opacity:.65; font-weight:600; margin-bottom:2px; }
+.sell-btn{ font-size:12px; padding:6px 9px; flex-shrink:0; }
+.unit-btns{ display:flex; flex-direction:column; gap:5px; flex-shrink:0; }
+.rename-row{ align-items:center; }
+input, textarea{ -webkit-user-select:text; user-select:text; }
+.rename-input{ width:100%; font-family:inherit; font-size:15px; padding:7px 9px; border-radius:8px; border:1px solid var(--line); background:var(--panel2); color:var(--ink); }
+
+/* ---------- 로스터 ---------- */
+.unit-row{ display:flex; align-items:center; gap:10px; padding:8px 6px; border-bottom:1px dashed var(--line); }
+.unit-row:last-child{ border-bottom:none; }
+.deploy-row{ cursor:pointer; border-radius:10px; }
+.deploy-row.sel{ background:color-mix(in srgb, var(--good) 16%, transparent); }
+.deploy-check{ width:20px; flex-shrink:0; text-align:center; font-size:16px; }
+.unit-em{ font-size:26px; width:34px; text-align:center; position:relative; }
+.unit-em.vet-1, .unit-em.vet-2{ border-radius:50%; }
+.unit-em.vet-1{ box-shadow:0 0 0 2px var(--vet1); }
+.unit-em.vet-2{ box-shadow:0 0 0 2px var(--vet2); }
+.unit-badge{ position:absolute; font-size:13px; right:-6px; bottom:-4px; }
+.vet-badge{ font-size:11px; font-weight:700; padding:1px 7px; border-radius:6px; margin-left:2px; white-space:nowrap; }
+.vet-badge.vet-1{ color:var(--vet1); border:1px solid var(--vet1); }
+.vet-badge.vet-2{ color:var(--vet2); border:1px solid var(--vet2); }
+.vet-badge.officer{ color:var(--gold); border:1px solid var(--gold); }
+.unit-mid{ flex:1; min-width:0; }
+.unit-name{ font-size:15px; font-weight:700; display:flex; gap:6px; align-items:baseline; }
+.unit-rank{ font-size:11px; opacity:.65; font-weight:400; }
+.unit-stats{ font-size:12px; opacity:.75; }
+.unit-hpbar{ margin-top:3px; width:100%; max-width:180px; }
+
+/* ---------- 밤: 전장 ---------- */
+.night-top{ display:flex; flex-direction:column; gap:6px; }
+.boss-strip{ display:flex; align-items:center; gap:8px; }
+.turn-chip{ background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:3px 9px; font-size:16px; white-space:nowrap; }
+.log-line{ font-size:13px; line-height:1.4; height:2.8em; opacity:.85; padding:0 2px; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.log-line.hint{ opacity:1; color:var(--gold); }
+.log-line.won{ opacity:1; color:var(--good); font-weight:700; }
+
+.board-wrap{ display:flex; justify-content:center; }
+.board{ display:grid; gap:3px; touch-action:manipulation; --tile:42px; }
+.tile{ width:var(--tile); height:var(--tile); border-radius:6px; background:var(--panel2); border:1px solid var(--line); position:relative; display:flex; align-items:center; justify-content:center; font-size:calc(var(--tile) * .5); }
+/* 지형지물 — 지상 유닛 통과 불가 */
+.tile.t-tree{ background:var(--t-tree); border-color:color-mix(in srgb, var(--t-tree) 70%, #000); }
+.tile.t-rock{ background:var(--t-rock); border-color:color-mix(in srgb, var(--t-rock) 70%, #000); }
+.tile.t-water{ background:var(--t-water); border-color:color-mix(in srgb, var(--t-water) 70%, #000);
+  background-image:radial-gradient(circle at 30% 35%, rgba(255,255,255,.10) 0 18%, transparent 19%), radial-gradient(circle at 70% 70%, rgba(255,255,255,.08) 0 14%, transparent 15%); }
+.tile.wall{ background:var(--t-wall); border-color:color-mix(in srgb, var(--t-wall) 70%, #000); }
+.tile .ter{ font-size:calc(var(--tile) * .46); }
+.tile .wave{ font-size:calc(var(--tile) * .5); color:rgba(190,220,255,.55); font-weight:700; line-height:1; }
+/* 전장의 보급품·구조 대상 */
+.tile.pickup{ box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--gold) 75%, transparent); }
+.tile .pk{ font-size:calc(var(--tile) * .44); animation:bob 1.8s ease-in-out infinite; }
+.tile .sos{ position:absolute; top:-4px; left:-4px; font-size:calc(var(--tile) * .3); }
+@keyframes bob{ 50%{ transform:translateY(-2px); } }
+/* 지켜야 할 마을 (2×2) */
+.village{ position:relative; border-radius:10px; border:2px solid var(--gold); background:color-mix(in srgb, var(--gold) 20%, var(--panel2)); display:flex; align-items:center; justify-content:center; }
+.village .v-em{ font-size:calc(var(--tile) * 1.15); line-height:1; }
+.village .v-tower{ position:absolute; top:3px; right:5px; font-size:calc(var(--tile) * .34); }
+.village .v-hp{ position:absolute; left:7px; right:7px; bottom:6px; height:5px; border-radius:3px; background:rgba(0,0,0,.35); overflow:hidden; }
+.village .v-hp i{ display:block; height:100%; background:var(--accent); transition:width .35s ease; }
+.village.hit-flash{ box-shadow:0 0 0 2px var(--accent), 0 0 14px color-mix(in srgb, var(--accent) 60%, transparent); border-color:var(--accent); }
+.board-note{ font-size:11.5px; opacity:.7; text-align:center; line-height:1.4; }
+.loot-box{ width:100%; display:flex; flex-direction:column; gap:6px; align-items:center; }
+.tile.reach{ box-shadow:inset 0 0 0 2px var(--good); background:color-mix(in srgb, var(--good) 22%, var(--panel2)); }
+.tile.hit{ box-shadow:inset 0 0 0 2px var(--accent); background:color-mix(in srgb, var(--accent) 26%, var(--panel2)); }
+.tile.aoe{ box-shadow:inset 0 0 0 2px var(--vet2); background:color-mix(in srgb, var(--vet2) 30%, var(--panel2)); animation:aoepulse 1s ease-in-out infinite; }
+@keyframes aoepulse{ 50%{ box-shadow:inset 0 0 0 3px var(--vet2); } }
+.tile.sel{ box-shadow:inset 0 0 0 2px var(--gold); }
+.tile.reach.pickup{ box-shadow:inset 0 0 0 2px var(--gold); background:color-mix(in srgb, var(--gold) 26%, var(--panel2)); }
+.tile.t-water.hit, .tile.t-tree.hit, .tile.t-rock.hit, .tile.wall.hit{ background-image:none; }
+.tile .mini-hp{ position:absolute; left:3px; right:3px; bottom:2px; height:4px; border-radius:2px; background:rgba(0,0,0,.35); overflow:hidden; }
+.tile .mini-hp i{ display:block; height:100%; }
+.tile .boss-mark{ position:absolute; top:-3px; left:-3px; font-size:10px; }
+
+.unit-tray{ display:flex; gap:6px; overflow-x:auto; padding-bottom:2px; }
+.tray-chip{ flex:0 0 auto; width:46px; text-align:center; font-size:20px; border:1px solid var(--line); border-radius:8px; padding:4px 2px; background:var(--panel); position:relative; }
+.tray-chip.dead{ opacity:.35; }
+.tray-chip.acted{ opacity:.55; }
+.tray-chip.vet-1{ box-shadow:0 0 0 2px var(--vet1); }
+.tray-chip.vet-2{ box-shadow:0 0 0 2px var(--vet2); }
+.tray-chip.active{ box-shadow:0 0 0 2px var(--gold); }
+.tray-hp{ height:3px; border-radius:2px; background:var(--panel2); margin-top:3px; overflow:hidden; }
+.tray-hp i{ display:block; height:100%; background:var(--good); }
+
+.action-bar{ position:sticky; bottom:var(--safe-b); background:var(--bg); border-top:1px solid var(--line); padding:8px 14px calc(8px + var(--safe-b)); display:flex; flex-direction:column; gap:8px; }
+.sel-info{ display:flex; align-items:center; gap:8px; font-size:14px; }
+.sel-stats{ font-size:12px; opacity:.75; }
+.skill-confirm{ display:flex; flex-direction:column; gap:6px; background:color-mix(in srgb, var(--vet2) 16%, transparent); border:1px solid var(--vet2); border-radius:10px; padding:8px 10px; }
+.sc-title{ font-size:14px; }
+.sc-desc{ font-size:12px; opacity:.8; }
+.sel-info .em{ font-size:24px; }
+.cd-chip{ font-size:11px; background:var(--panel2); border-radius:6px; padding:1px 6px; }
+
+/* ---------- 결과/엔딩 ---------- */
+.result-wrap{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:14px; padding:20px; }
+.result-em{ font-size:56px; }
+.stat-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; width:100%; }
+.stat-box{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 4px; }
+.stat-num{ font-size:26px; }
+.stat-lbl{ font-size:11px; opacity:.7; }
+
+.tech-row{ display:flex; gap:8px; }
+.tech-chip{ flex:1; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:8px; text-align:center; }
+.tech-chip .lvdots{ display:flex; gap:3px; justify-content:center; margin-top:3px; }
+.dot{ width:7px; height:7px; border-radius:50%; background:var(--panel2); border:1px solid var(--line); }
+.dot.on{ background:var(--gold); border-color:var(--gold); }
+
+.fade-in{ animation:fadeIn .35s ease; }
+@keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+@media (prefers-reduced-motion: reduce){ .fade-in{ animation:none; } .bar>i{ transition:none; } .tile .pk{ animation:none; } .tile.aoe{ animation:none; } }
+
+.intro-wrap{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:16px; padding:24px; }
+.intro-wrap .night-num{ font-size:64px; line-height:1; }
+.intro-wrap p{ font-size:16px; max-width:32ch; line-height:1.6; }
+
+/* ---------- 이야기 도감 ---------- */
+.codex-card, .codex-unlock-card{ color:inherit; cursor:pointer; font-family:inherit; }
+.codex-unlock-card{ width:100%; text-align:center; border:1px solid var(--gold); background:color-mix(in srgb, var(--gold) 14%, var(--panel)); font-size:15px; }
+.codex-entry{ display:flex; gap:10px; padding:10px 2px; border-bottom:1px dashed var(--line); }
+.codex-entry:last-child{ border-bottom:none; }
+.codex-entry.new{ background:color-mix(in srgb, var(--gold) 14%, transparent); border-radius:8px; }
+.codex-entry.locked{ opacity:.5; }
+.codex-num{ flex:0 0 auto; width:22px; font-size:13px; opacity:.55; padding-top:2px; }
+.codex-title{ font-size:15px; font-weight:700; margin-bottom:2px; }
+.codex-body{ font-size:14px; line-height:1.6; margin:0; opacity:.9; }
+
+/* ---------- 저장 관리 ---------- */
+.slot-list{ display:flex; flex-direction:column; gap:8px; }
+.slot-card{ display:flex; gap:10px; align-items:stretch; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px; }
+.slot-card.empty{ background:transparent; border-style:dashed; }
+.slot-mark{ flex:0 0 44px; display:flex; align-items:center; justify-content:center; font-family:'Teko','Gowun Dodum',sans-serif; font-size:30px; line-height:1; border-right:1px solid var(--line); padding-right:8px; color:var(--accent); }
+.slot-card.auto .slot-mark{ font-size:17px; font-family:'Gowun Dodum',sans-serif; font-weight:700; color:var(--gold); }
+.slot-card.empty .slot-mark{ opacity:.45; }
+.slot-body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+.slot-label{ font-size:12px; opacity:.6; }
+.slot-title{ font-size:16px; font-weight:700; }
+.slot-body .btn-row{ margin-top:5px; }
+.slot-body .btn{ padding:7px 11px; font-size:14px; }
+.slot-confirm{ margin-top:6px; background:color-mix(in srgb, var(--accent) 12%, transparent); border:1px solid var(--accent); border-radius:8px; padding:8px; display:flex; flex-direction:column; gap:6px; }
+.slot-q{ font-size:13px; line-height:1.5; }
+.save-section{ border-top:1px dashed var(--line); padding-top:10px; margin-top:2px; }
+.save-section h4{ margin:0 0 4px; font-size:15px; }
+.save-textarea{ width:100%; min-height:88px; max-height:160px; font-family:monospace; font-size:11px; line-height:1.4; padding:8px; border-radius:8px; border:1px solid var(--line); background:var(--panel2); color:var(--ink); resize:vertical; box-sizing:border-box; }
+
+::-webkit-scrollbar{ display:none; }
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+'use strict';
+/* =====================  상수 · 데이터  ===================== */
+const GW = 8, GH = 9;                 // 전장 크기 (가로 8 · 세로 9) — 좌측 하단 2×2가 지켜야 할 마을
+const TIER_XP = [0, 40, 90, 160, 260];   // 기술 Lv1~5 필요 누적 경험치
+const RANK_XP = [0, 8, 22, 45];       // 계급 0~3 필요 경험치
+const ROSTER_MAX = 12;
+const OUTINGS_BASE = 3;
+const HOUSE_BASE_HP = 40;
+const TURN_LIMIT = 30;
+const FINAL_NIGHT = 13;
+const POWER_HI = 340;                 // 이 전투력 이상이면 최종 보스가 한 단계 강해짐
+const TUNE = { hpPerNight: 0.08, hpPerCycle: 0.05, crit: 0.1, block: 0.1, towerBase: 1, towerPer: 2 };
+const DIRS = [[1,0],[-1,0],[0,1],[0,-1]];
+
+/* =====================  전장 지도  ===================== */
+/* 마을은 좌측 하단 2×2. 악마는 위쪽 가장자리와 오른쪽 가장자리에서 몰려온다 */
+const VILLAGE = { x:0, y:GH-2, w:2, h:2 };
+const DEPLOY_TILES = [[2,GH-2],[2,GH-1],[1,GH-3],[0,GH-3],[2,GH-3],[3,GH-2]];   // 출전 대원 초기 위치 (마을 바로 앞)
+const SPAWN_TILES  = [[3,0],[4,0],[5,0],[6,0],[7,0],[7,1],[7,2],[7,3],[7,4]];  // 악마 출현 지점
+const BOSS_SPAWN   = [[6,0],[7,1],[5,0],[7,2]];
+/* 방벽 레벨별 바리케이드 — 마을에서 3칸 떨어진 둘레에 세우되, 앞쪽 통로 두 칸은 항상 비워 둔다 */
+const WALL_TILES = [
+  [],
+  [[0,GH-5],[4,GH-1]],
+  [[0,GH-5],[4,GH-1],[1,GH-5]],
+  [[0,GH-5],[4,GH-1],[1,GH-5],[4,GH-2]],
+];
+/* 통과할 수 없는 지형지물 (비행 유닛은 넘어갈 수 있다) — 밤마다 지형이 바뀐다 */
+const TERRAIN = {
+  tree:  { n:'숲',   em:'🌲', d:'지상 유닛은 지나갈 수 없다 · 비행 유닛은 넘어간다' },
+  rock:  { n:'바위', em:'🪨', d:'지상 유닛은 지나갈 수 없다 · 비행 유닛은 넘어간다' },
+  water: { n:'물',   em:'',   d:'지상 유닛은 건널 수 없다 · 비행 유닛은 넘어간다' },
+};
+/* 전장에 흩어진 구조 대상 · 보급품 — 대원을 그 칸으로 옮기면 회수. 악마가 밟으면 사라지고, 밤이 끝나면 남은 것도 사라진다 */
+const PICKUPS = {
+  crate:    { n:'보급 상자', em:'📦', v:'챙겼다',   lost:'부쉈다',    d:'대원을 이 칸으로 옮기면 자재를 얻는다' },
+  survivor: { n:'생존자',   em:'🙋', v:'구했다',   lost:'덮쳤다',    d:'대원을 이 칸으로 옮기면 난민으로 합류한다' },
+  intel:    { n:'낡은 기록', em:'📜', v:'주웠다',   lost:'불태웠다',  d:'대원을 이 칸으로 옮기면 기술 경험치를 얻는다' },
+  rescue:   { n:'고립된 대원', em:'🆘', v:'구조했다', lost:'덮쳤다',   d:'대원을 이 칸으로 옮기면 구조되어 곧바로 전투에 합류한다' },
+};
+const RESCUE_POOL = { base:['rifle','wolf','rat','bot'], H:'medic', A:'boar', M:'drone' };  // 기술 2단계부터 섞여 나오는 대원
+const AGGRO = 3;       // 악마가 마을 대신 대원을 쫓기 시작하는 거리
+const TOWER_RNG = 4;   // 망루 사거리 (마을 기준)
+
+/* 아군 전용 참전 등급 — 누적 킬 카운트로 승급. 승급할수록 치명타 확률은 오르고 자신의 방어(피격 시 절반피해) 확률은 내려감 */
+const VET_KILLS = [0, 5, 15];               // 신병/베테랑/마스터 승급에 필요한 누적 킬 수
+const VET_NAME  = ['신병', '베테랑', '마스터'];
+const VET_CRIT  = [0.10, 0.15, 0.20];       // 공격 시 치명타(2배 피해) 확률
+const VET_BLOCK = [0.10, 0.05, 0.00];       // 피격 시 자신이 방어(피해 1/2)할 확률
+
+/* 세 가지 발전 루트 — 5단계까지 진화 */
+const ROUTES = {
+  H: { n:'인간군대', en:'Humanism',     ic:'🎖️', lv:[
+        { u:'소총병 훈련',        p:'' },
+        { u:'위생병 훈련',        p:'인간 체력 +2' },
+        { u:'척탄병 훈련',        p:'인간 공격 +1' },
+        { u:'저격수 훈련',        p:'인간 사거리 +1' },
+        { u:'특수부대원 훈련',    p:'인간 방어 +2' } ] },
+  A: { n:'동물농장', en:'Animal Troop', ic:'🐾', lv:[
+        { u:'늑대·들쥐 길들이기', p:'' },
+        { u:'멧돼지 길들이기',    p:'동물 체력 +3' },
+        { u:'불곰 길들이기',      p:'동물 공격 +1' },
+        { u:'독수리 길들이기',    p:'동물 이동 +1' },
+        { u:'코뿔소 길들이기',    p:'동물 방어 +2' } ] },
+  M: { n:'기계화',   en:'Mechanic',     ic:'⚙️', lv:[
+        { u:'경비 로봇 생산',     p:'' },
+        { u:'수리 드론 생산',     p:'기계 방어 +1' },
+        { u:'전투 메카 생산',     p:'기계 체력 +4' },
+        { u:'포격 터렛 생산',     p:'기계 사거리 +1' },
+        { u:'지휘 메카 생산',     p:'기계 공격 +2' } ] },
+};
+
+const RANKS = {
+  H:['이병','일병','상병','병장'],
+  A:['새끼','성체','노련한','우두머리'],
+  M:['Mk.I','Mk.II','Mk.III','Mk.IV'],
+  X:['견습','숙련','정예','전설'],
+};
+
+/* 아군 유닛 — g: 계급당 성장, make: 생산 조건(route tier·비용), fuse: 융합 재료, sk: 스킬(계급 1부터 해금) */
+const UT = {
+  rifle:{ n:'소총병', em:'🪖', rt:['H'], hp:10, atk:4, def:0, mov:3, rng:3, g:{hp:2,atk:1}, role:'ranged',
+    make:{tier:1, mat:2, ref:1},
+    sk:{ n:'조준 사격', k:'strike', mult:2, cd:3, d:'대상에게 2배 피해' } },
+  medic:{ n:'위생병', em:'⛑️', rt:['H'], hp:9, atk:2, def:0, mov:3, rng:2, g:{hp:2,atk:1}, role:'support',
+    make:{tier:2, mat:3, ref:1},
+    sk:{ n:'응급 처치', k:'heal', amt:5, rng:2, cd:1, d:'아군 체력 5 회복' } },
+  gren:{ n:'척탄병', em:'💣', rt:['H'], hp:11, atk:4, def:0, mov:3, rng:3, g:{hp:2,atk:1}, role:'ranged',
+    make:{tier:3, mat:5, ref:1},
+    sk:{ n:'수류탄', k:'aoe', mult:1.5, rng:4, cd:2, d:'대상과 상하좌우 칸에 1.5배 피해' } },
+  sniper:{ n:'저격수', em:'🎯', rt:['H'], hp:9, atk:6, def:0, mov:2, rng:5, g:{hp:2,atk:2}, role:'ranged',
+    make:{tier:4, mat:8, ref:2},
+    sk:{ n:'저격', k:'strike', mult:2.5, cd:3, d:'대상에게 2.5배 피해' } },
+  commando:{ n:'특수부대원', em:'🥷', rt:['H'], hp:16, atk:7, def:2, mov:4, rng:3, g:{hp:3,atk:2}, role:'ranged',
+    make:{tier:5, mat:14, ref:3},
+    sk:{ n:'특수 작전', k:'aoe', mult:1.8, rng:3, cd:3, d:'대상과 상하좌우 칸에 1.8배 피해' } },
+  wolf:{ n:'늑대', em:'🐺', rt:['A'], hp:9, atk:4, def:0, mov:5, rng:1, g:{hp:3,atk:1}, role:'melee',
+    make:{tier:1, mat:4},
+    sk:{ n:'물어뜯기', k:'strike', mult:1.2, dot:{n:'출혈',d:2,t:2}, cd:2, d:'1.2배 피해, 출혈 2턴' } },
+  boar:{ n:'멧돼지', em:'🐗', rt:['A'], hp:18, atk:3, def:2, mov:3, rng:1, g:{hp:3,atk:1}, role:'tank',
+    make:{tier:2, mat:5},
+    sk:{ n:'돌진', k:'charge', dist:3, mult:1.5, knock:1, cd:3, d:'일직선 3칸 돌진, 적을 밀쳐냄' } },
+  rat:{ n:'들쥐 떼', em:'🐀', rt:['A'], hp:6, atk:2, def:0, mov:4, rng:1, g:{hp:2,atk:1}, role:'melee',
+    make:{tier:1, mat:3},
+    sk:{ n:'역병', k:'strike', mult:1, dot:{n:'중독',d:1,t:3}, cd:2, d:'중독 3턴' } },
+  bear:{ n:'불곰', em:'🐻', rt:['A'], hp:26, atk:6, def:2, mov:3, rng:1, g:{hp:4,atk:1}, role:'tank',
+    make:{tier:3, mat:10},
+    sk:{ n:'휩쓸기', k:'cleave', mult:1.2, cd:2, d:'인접한 모든 적에게 1.2배 피해' } },
+  eagle:{ n:'독수리', em:'🦅', rt:['A'], hp:10, atk:5, def:0, mov:7, rng:2, g:{hp:2,atk:1}, fly:true, role:'ranged',
+    make:{tier:4, mat:9},
+    sk:{ n:'급강하', k:'charge', dist:5, mult:1.6, knock:1, cd:2, d:'일직선 5칸 급강하, 2배 가까운 피해와 밀쳐냄' } },
+  rhino:{ n:'코뿔소', em:'🦏', rt:['A'], hp:34, atk:8, def:3, mov:3, rng:1, g:{hp:5,atk:2}, role:'tank',
+    make:{tier:5, mat:16},
+    sk:{ n:'짓밟기', k:'cleave', mult:1.5, cd:2, d:'인접한 모든 적에게 1.5배 피해' } },
+  bot:{ n:'경비 로봇', em:'🤖', rt:['M'], hp:14, atk:3, def:2, mov:2, rng:2, g:{hp:3,atk:1}, role:'tank',
+    make:{tier:1, mat:6},
+    sk:{ n:'실드 전개', k:'buff', def:2, rad:1, cd:3, d:'자신과 인접 아군 방어 +2 (1라운드)' } },
+  drone:{ n:'수리 드론', em:'🛸', rt:['M'], hp:8, atk:3, def:0, mov:5, rng:2, g:{hp:2,atk:1}, fly:true, role:'support',
+    make:{tier:2, mat:8},
+    sk:{ n:'수리', k:'heal', amt:6, rng:2, cd:1, only:'M', d:'기계 아군 체력 6 회복' } },
+  mech:{ n:'전투 메카', em:'🦾', rt:['M'], hp:30, atk:7, def:3, mov:2, rng:3, g:{hp:4,atk:1}, role:'ranged',
+    make:{tier:3, mat:14},
+    sk:{ n:'미사일', k:'aoe', mult:1.5, rng:4, cd:3, d:'대상과 상하좌우 칸에 1.5배 피해' } },
+  turret:{ n:'포격 터렛', em:'🗼', rt:['M'], hp:12, atk:6, def:2, mov:1, rng:5, g:{hp:3,atk:2}, role:'ranged',
+    make:{tier:4, mat:12},
+    sk:{ n:'정밀 포격', k:'aoe', mult:2, rng:5, cd:3, d:'대상과 상하좌우 칸에 2배 피해' } },
+  cmdmech:{ n:'지휘 메카', em:'🛰️', rt:['M'], hp:26, atk:8, def:4, mov:3, rng:3, g:{hp:4,atk:2}, role:'ranged',
+    make:{tier:5, mat:20},
+    sk:{ n:'지휘 신호', k:'buff', atk:2, rad:2, cd:3, d:'자신과 주변 아군 공격 +2 (1라운드)' } },
+  /* 융합 유닛 — 1차: 서로 다른 두 루트의 기본 유닛 → 2루트 하이브리드 (해당 두 루트 기술 2단계 필요) */
+  armboar:{ n:'기갑 멧돼지', em:'🐗', badge:'⚙️', rt:['A','M'], hp:22, atk:5, def:4, mov:3, rng:1, g:{hp:4,atk:1}, role:'tank',
+    fuse:{from:['boar','bot'], mat:7, stage:1, unlock:{A:2,M:2}},
+    sk:{ n:'철갑 돌진', k:'charge', dist:4, mult:1.8, knock:2, cd:2, d:'일직선 4칸 돌진, 2칸 밀쳐냄' } },
+  wolfrider:{ n:'늑대 사냥꾼', em:'🐺', badge:'🏹', rt:['H','A'], hp:15, atk:5, def:1, mov:6, rng:2, g:{hp:3,atk:1}, role:'ranged',
+    fuse:{from:['rifle','wolf'], mat:5, stage:1, unlock:{H:2,A:2}},
+    sk:{ n:'치고 빠지기', k:'runshot', mult:1.4, cd:2, d:'1.4배 피해 후에도 이동 가능' } },
+  pilot:{ n:'로봇 탑승병', em:'🤖', badge:'🪖', rt:['H','M'], hp:22, atk:5, def:3, mov:3, rng:3, g:{hp:4,atk:1}, role:'ranged',
+    fuse:{from:['rifle','bot'], mat:6, stage:1, unlock:{H:2,M:2}},
+    sk:{ n:'제압 사격', k:'strike', mult:1.5, stun:1, cd:3, d:'1.5배 피해, 기절 1턴' } },
+  /* 2차: 1차 융합체 + 나머지 한 루트의 기본 유닛 → 3루트 하이브리드 (세 루트 모두 기술 3단계 필요) */
+  mechcav:{ n:'기계화 돌격기병', em:'🐺', badge:'🛸', rt:['H','A','M'], hp:26, atk:7, def:2, mov:6, rng:2, g:{hp:4,atk:2}, role:'ranged',
+    fuse:{from:['wolfrider','drone'], mat:9, stage:2, unlock:{H:3,A:3,M:3}},
+    sk:{ n:'연쇄 습격', k:'runshot', mult:1.6, cd:2, d:'1.6배 피해 후에도 이동 가능' } },
+  ironcolossus:{ n:'강철 거인병', em:'🐗', badge:'💥', rt:['A','M','H'], hp:40, atk:8, def:5, mov:3, rng:1, g:{hp:5,atk:2}, role:'tank',
+    fuse:{from:['armboar','gren'], mat:10, stage:2, unlock:{H:3,A:3,M:3}},
+    sk:{ n:'융합 강타', k:'charge', dist:4, mult:2, knock:2, cd:2, d:'일직선 4칸 돌진, 2배 피해, 2칸 밀쳐냄' } },
+  /* 1차(추가): 같은 두 루트라도 다른 조합으로 얻는 대안 융합체 */
+  hawkeye:{ n:'매의 눈', em:'🦅', badge:'🎯', rt:['H','A'], hp:16, atk:7, def:1, mov:6, rng:4, g:{hp:3,atk:2}, role:'ranged',
+    fuse:{from:['sniper','eagle'], mat:8, stage:1, unlock:{H:2,A:2}},
+    sk:{ n:'정밀 급강하', k:'charge', dist:5, mult:2, knock:1, cd:2, d:'일직선 5칸 급강하, 2배 피해, 밀쳐냄' } },
+  battery:{ n:'강습 포대', em:'🗼', badge:'🥷', rt:['H','M'], hp:20, atk:8, def:3, mov:3, rng:5, g:{hp:3,atk:2}, role:'ranged',
+    fuse:{from:['commando','turret'], mat:9, stage:1, unlock:{H:2,M:2}},
+    sk:{ n:'융단 포격', k:'aoe', mult:1.8, rng:5, cd:3, d:'대상과 상하좌우 칸에 1.8배 피해' } },
+  juggernaut:{ n:'장갑 돌격대', em:'🦏', badge:'🛰️', rt:['A','M'], hp:45, atk:7, def:6, mov:3, rng:1, g:{hp:5,atk:2}, role:'tank',
+    fuse:{from:['rhino','cmdmech'], mat:10, stage:1, unlock:{A:2,M:2}},
+    sk:{ n:'초중량 돌진', k:'charge', dist:4, mult:1.8, knock:3, cd:2, d:'일직선 4칸 돌진, 1.8배 피해, 3칸 밀쳐냄' } },
+  /* 3차: 두 2차 융합체 → 최종 하이브리드 (세 루트 모두 기술 5단계, 즉 최대치 필요) */
+  apex:{ n:'최후의 수호자', em:'🛡️', badge:'✨', rt:['H','A','M'], hp:55, atk:11, def:6, mov:4, rng:2, g:{hp:6,atk:3}, role:'tank',
+    fuse:{from:['mechcav','ironcolossus'], mat:16, stage:3, unlock:{H:5,A:5,M:5}},
+    sk:{ n:'최후의 저항', k:'aoe', mult:2, rng:3, cd:3, d:'대상과 상하좌우 칸에 2배 피해' } },
+  /* 2차(추가): 새로운 1차 융합체를 재료로 쓰는 대안 3루트 하이브리드 */
+  skywatch:{ n:'천공 감시자', em:'🦅', badge:'🛸', rt:['H','A','M'], hp:24, atk:9, def:2, mov:7, rng:5, g:{hp:4,atk:2}, role:'ranged',
+    fuse:{from:['hawkeye','drone'], mat:11, stage:2, unlock:{H:3,A:3,M:3}},
+    sk:{ n:'전역 조준', k:'aoe', mult:1.8, rng:6, cd:2, d:'대상과 상하좌우 칸에 1.8배 피해' } },
+  warlord:{ n:'전쟁군주', em:'🦏', badge:'🪖', rt:['A','M','H'], hp:52, atk:10, def:6, mov:4, rng:1, g:{hp:6,atk:2}, role:'tank',
+    fuse:{from:['juggernaut','rifle'], mat:12, stage:2, unlock:{H:3,A:3,M:3}},
+    sk:{ n:'짓밟는 진격', k:'cleave', mult:1.8, cd:2, d:'인접한 모든 적에게 1.8배 피해' } },
+  /* 3차(추가): 대안 2차 융합체 둘을 합친 두 번째 최종 하이브리드 — 방어보다 공격에 특화된 궁극체 */
+  annihilator:{ n:'섬멸자', em:'⚡', badge:'💀', rt:['H','A','M'], hp:40, atk:16, def:4, mov:5, rng:3, g:{hp:5,atk:4}, role:'ranged',
+    fuse:{from:['skywatch','warlord'], mat:18, stage:3, unlock:{H:5,A:5,M:5}},
+    sk:{ n:'종말의 일격', k:'strike', mult:3, cd:3, d:'대상에게 3배 피해' } },
+  /* 특전 유닛 — 이야기 도감을 모두 모아야 나타나는 이벤트로만 얻을 수 있다. 생산·훈련·융합 대상이 아니다. */
+  angel:{ n:'천사의 군대', em:'😇', badge:'✨', rt:['H','A','M'], hp:150, atk:25, def:12, mov:6, rng:3, g:{hp:8,atk:4}, role:'ranged',
+    sk:{ n:'심판의 빛', k:'judgment', mult:2.5, cd:4, d:'전장의 모든 적에게 2.5배 피해' } },
+};
+const MAKE_ORDER = { H:['rifle','medic','gren','sniper','commando'], A:['rat','wolf','boar','bear','eagle','rhino'], M:['bot','drone','mech','turret','cmdmech'] };
+/* 저티어 유닛 여러 마리를 모아 만드는 1차 융합체 — 서로 다른 루트를 합치는 융합과 같은 카테고리로 취급한다.
+   합체는 되돌릴 수 없다 (다른 융합과 마찬가지로 영구적) */
+Object.assign(UT, {
+  ratswarm: { n:'흉포한 들쥐 무리', em:'🐀', badge:'💢', rt:['A'], hp:20, atk:5, def:1, mov:5, rng:1, g:{hp:3,atk:1}, role:'melee',
+    fuse:{from:Array(8).fill('rat'), mat:6, stage:1, unlock:{A:3}},
+    sk:{ n:'증식과 포식', k:'multiply', copies:3, once:true, cd:0, d:'전투당 1회 — 자신과 같은 개체 2기를 더 만들어낸다 (총 3기)' } },
+  riflesquad: { n:'정예 소총 분대', em:'🪖', badge:'🎖️', rt:['H'], hp:18, atk:6, def:1, mov:3, rng:4, g:{hp:3,atk:2}, role:'ranged',
+    fuse:{from:Array(4).fill('rifle'), mat:5, stage:1, unlock:{H:3}},
+    sk:{ n:'일제 사격', k:'aoe', mult:2, rng:4, cd:2, d:'대상과 상하좌우 칸에 2배 피해' } },
+  botswarm: { n:'자가수리 로봇단', em:'🤖', badge:'🔧', rt:['M'], hp:26, atk:5, def:4, mov:2, rng:2, g:{hp:4,atk:1}, role:'tank',
+    fuse:{from:Array(5).fill('bot'), mat:7, stage:1, unlock:{M:3}},
+    sk:{ n:'자가 수복', k:'heal', amt:8, rng:1, cd:2, d:'자신(혹은 인접 대원)의 체력 8 회복' } },
+});
+const FUSE_STAGES = [
+  { n:'1차 융합', types:['wolfrider','pilot','armboar','hawkeye','battery','juggernaut','ratswarm','riflesquad','botswarm'] },
+  { n:'2차 융합', types:['mechcav','ironcolossus','skywatch','warlord'] },
+  { n:'3차 융합', types:['apex','annihilator'] },
+];
+const FUSE_ORDER = FUSE_STAGES.flatMap(s => s.types);
+
+/* 악마 */
+const ET = {
+  imp:  { n:'임프',       em:'👿', hp:6,  atk:3, def:0, mov:4, rng:1 },
+  bat:  { n:'박쥐악마',   em:'🦇', hp:5,  atk:3, def:0, mov:5, rng:1, fly:true },
+  fiend:{ n:'마귀병',     em:'👹', hp:14, atk:4, def:1, mov:3, rng:1 },
+  skel: { n:'뼈병사',     em:'💀', hp:10, atk:3, def:2, mov:3, rng:1 },
+  flame:{ n:'불꽃 정령',  em:'🔥', hp:7,  atk:4, def:0, mov:2, rng:3 },
+  scorp:{ n:'지옥 전갈',  em:'🦂', hp:18, atk:5, def:2, mov:3, rng:1, dot:{n:'중독',d:1,t:2} },
+  /* 대악마 (3·6·9·12번째 밤) */
+  mammon:{ n:'마몬', title:'대악마', em:'🪙', boss:1, hp:60, atk:5, def:1, mov:2, rng:1,
+    ab:[{k:'slam',ev:2,first:1},{k:'summon',ev:3,type:'imp',n:2,first:2}] },
+  asmo:  { n:'아스모데우스', title:'대악마', em:'🐐', boss:1, hp:100, atk:6, def:2, mov:2, rng:1, enrage:.5,
+    ab:[{k:'fireball',ev:2,rng:4,first:1},{k:'summon',ev:4,type:'fiend',n:1,first:3}] },
+  beel:  { n:'벨제부브', title:'대악마', em:'🪰', boss:1, hp:150, atk:7, def:2, mov:3, rng:1, enrage:.5,
+    ab:[{k:'summon',ev:2,type:'bat',n:2,first:1},{k:'plague',ev:3,d:2,first:2}] },
+  leviathan:{ n:'리바이어던', title:'대악마', em:'🐍', boss:1, hp:190, atk:8, def:3, mov:2, rng:2, enrage:.5,
+    ab:[{k:'plague',ev:2,d:2,first:1},{k:'summon',ev:3,type:'scorp',n:2,first:2},{k:'fireball',ev:4,rng:4,first:3}] },
+  /* 최종 보스 (13번째 밤) — 회차·전투력에 따라 단계 강화 */
+  mephisto:{ n:'메피스토', title:'지옥의 군주', em:'🎭', boss:1, hp:180, atk:8, def:2, mov:3, rng:1, enrage:.5,
+    ab:[{k:'fireball',ev:2,rng:4,first:1},{k:'summon',ev:4,type:'fiend',n:2,first:3}] },
+  baal:    { n:'바알', title:'지옥의 군주', em:'🐂', boss:1, hp:240, atk:10, def:3, mov:3, rng:1, enrage:.5,
+    ab:[{k:'slam',ev:2,first:1},{k:'fireball',ev:3,rng:4,first:2},{k:'summon',ev:3,type:'scorp',n:1,first:2}] },
+  diablo:  { n:'디아블로', title:'지옥의 군주', em:'🐲', boss:1, hp:300, atk:12, def:3, mov:3, rng:1, enrage:.5,
+    ab:[{k:'slam',ev:2,first:1},{k:'fireball',ev:2,rng:4,first:1},{k:'summon',ev:3,type:'fiend',n:2,first:2},{k:'plague',ev:4,d:3,first:3}] },
+  lucifer: { n:'루시퍼', title:'타락한 샛별', em:'😈', boss:1, hp:380, atk:14, def:4, mov:3, rng:1, enrage:.5,
+    ab:[{k:'slam',ev:2,first:1},{k:'fireball',ev:2,rng:4,first:1},{k:'summon',ev:3,type:'fiend',n:2,first:2},{k:'plague',ev:3,d:3,first:2}] },
+};
+const FINALS = ['mephisto','baal','diablo','lucifer'];
+
+/* 열세 번의 밤 — t:0 은 밤 시작 시, t:n 은 n번째 턴 시작 시 출현 */
+const NIGHTS = [null,
+  { w:[{t:0,l:[['imp',3],['fiend',1]]}] },
+  { w:[{t:0,l:[['imp',3],['skel',1]]},{t:3,l:[['bat',2]]}] },
+  { boss:'mammon', bossTurn:3, w:[{t:0,l:[['imp',2]]}] },
+  { w:[{t:0,l:[['fiend',2],['imp',2],['flame',1]]},{t:4,l:[['bat',2],['skel',1]]}] },
+  { w:[{t:0,l:[['fiend',2],['skel',2],['flame',1]]},{t:3,l:[['imp',3],['bat',2]]}] },
+  { boss:'asmo', bossTurn:3, w:[{t:0,l:[['fiend',2],['flame',1]]}] },
+  { w:[{t:0,l:[['fiend',2],['scorp',1],['flame',2]]},{t:3,l:[['skel',2],['bat',3]]},{t:5,l:[['scorp',1]]}] },
+  { w:[{t:0,l:[['scorp',2],['fiend',2],['flame',1]]},{t:3,l:[['skel',2],['imp',2]]},{t:5,l:[['fiend',1],['bat',2]]}] },
+  { boss:'beel', bossTurn:4, w:[{t:0,l:[['scorp',2],['flame',2]]}] },
+  { w:[{t:0,l:[['scorp',2],['fiend',3],['flame',1]]},{t:3,l:[['skel',3],['bat',2]]},{t:5,l:[['imp',3]]}] },
+  { w:[{t:0,l:[['scorp',3],['fiend',2],['flame',2]]},{t:3,l:[['skel',3],['imp',3]]},{t:5,l:[['fiend',2],['bat',3]]}] },
+  { boss:'leviathan', bossTurn:4, w:[{t:0,l:[['scorp',2],['fiend',2]]}] },
+  { boss:'FINAL', bossTurn:5, w:[{t:0,l:[['fiend',3],['flame',2]]},{t:3,l:[['scorp',2]]},{t:5,l:[['skel',2],['bat',2]]}] },
+];
+const INTRO = [null,
+  '첫 번째 밤. 숲 쪽에서 붉은 눈동자가 하나둘 깜빡인다.',
+  '두 번째 밤. 날갯소리가 지붕 위를 스치고 지나간다.',
+  '세 번째 밤. 대악마 마몬이 황금빛 눈으로 집을 내려다본다.',
+  '네 번째 밤. 어둠 속에서 불꽃이 춤을 춘다.',
+  '다섯 번째 밤. 땅이 울린다. 절반이 지났다.',
+  '여섯 번째 밤. 뿔 달린 대악마 아스모데우스가 군림한다.',
+  '일곱 번째 밤. 독침이 달빛에 번뜩인다.',
+  '여덟 번째 밤. 악마의 수가 끝없이 불어난다.',
+  '아홉 번째 밤. 파리 떼가 하늘을 덮는다. 벨제부브가 온다.',
+  '열 번째 밤. 아홉 번째 밤의 악취가 아직도 가시지 않았다.',
+  '열한 번째 밤. 무언가 거대한 것이 다가오는 소리가 땅을 타고 전해진다.',
+  '열두 번째 밤. 파도 한 점 없는 곳에서, 리바이어던이 몸을 일으킨다.',
+  '열세 번째 밤. 불길한 숫자만큼, 문이 활짝 열렸다.',
+];
+const ENDINGS = [
+  '메피스토가 웃으며 재로 흩어졌다. 그러나 지옥은 더 깊은 곳에서 다음 군주를 부르고 있다.',
+  '바알의 뿔이 부러졌다. 어둠 저 아래에서 더 오래된 이름이 눈을 뜬다.',
+  '디아블로가 무너졌다. 하지만 하늘에서 떨어진 가장 밝은 별이 아직 남아 있다.',
+  '루시퍼가 쓰러졌다. 열세 번의 밤이 모두 끝났다. 집 위로 아침이 온다.',
+];
+/* 히든 엔딩 — 도감을 모두 모아 얻은 '천사의 군대'를 데리고 열세 번째 밤을 이기면 등장. 이후 새 회차를 열 수 없다 */
+const HIDDEN_ENDING = {
+  t: '마지막 균열이 닫히다',
+  b: '천사의 군대가 내려온 순간, 그들조차 무엇을 되찾으러 온 것인지 잊고 있었다. 인간과 짐승과 기계가 나란히 선 대열 앞에서, 그들은 마침내 기억해냈다 — 루시퍼가 남긴 균열은 미움이 아니라 그리움으로 메워야 했다는 것을. 열세 번째 밤, 하늘과 땅 사이의 마지막 금이 소리 없이 닫힌다. 마몬도, 아스모데우스도, 벨제부브도, 리바이어던도, 그리고 그 너머의 것들도 — 돌아갈 곳을 잃는다. 이야기는 여기서 완전히 끝난다. 더 이상의 밤은, 오지 않는다.',
+};
+
+/* 집 시설 */
+const HOUSE = {
+  wall:    { n:'방벽',   em:'🧱', max:3, cost:[4,7,10],  now:l=>`마을 체력 ${HOUSE_BASE_HP+15*l}, 바리케이드 ${WALL_TILES[l].length}칸` },
+  tower:   { n:'망루',   em:'🔭', max:3, cost:[5,8,12],  now:l=>l?`매 턴 마을 ${TOWER_RNG}칸 안의 가장 가까운 악마에게 ${TUNE.towerBase+TUNE.towerPer*l} 피해`:'아직 없음' },
+  barracks:{ n:'병영',   em:'⛺', max:2, cost:[6,10],    now:l=>`출전 가능 ${4+l}기` },
+  infirm:  { n:'치료소', em:'🩺', max:3, cost:[5,8,12],  now:l=>l?`쓰러진 유닛 ${l}기를 살려낸다`:'쓰러진 유닛은 돌아오지 못한다' },
+  scout:   { n:'정찰대', em:'🧭', max:2, cost:[6,10],    now:l=>`하루 외출 ${OUTINGS_BASE+l}회` },
+};
+const HOUSE_ORDER = ['wall','tower','barracks','infirm','scout'];
+
+/* 낮 — 외출 장소와 이벤트 */
+const CATS = { mat:{n:'자재', ic:'⚙️'}, ani:{n:'동물', ic:'🐾'}, ref:{n:'난민', ic:'👥'}, spec:{n:'기록', ic:'📜'} };
+const LOCS = [
+  { id:'forest', n:'숲 가장자리', em:'🌲', w:{ani:.55, mat:.2,  ref:.1,  spec:.15} },
+  { id:'road',   n:'무너진 국도', em:'🛣️', w:{ref:.5,  mat:.3,  ani:.1,  spec:.1 } },
+  { id:'fact',   n:'버려진 공장', em:'🏭', w:{mat:.45, spec:.4,  ref:.1,  ani:.05} },
+  { id:'farm',   n:'폐농장',      em:'🚜', w:{ani:.35, mat:.3,   ref:.25, spec:.1 } },
+];
+/* fx: mat/ref 는 숫자 또는 [최소,최대], unit 은 유닛 종류(배열이면 무작위), rank, xp:{루트:값} */
+const EVENTS = [
+  { id:'ware', cat:'mat', ti:'무너진 창고', tx:'찌그러진 철문 안쪽에 쓸 만한 부품이 쌓여 있다. 천장이 위태롭게 흔들린다.',
+    ch:[ {l:'조심스럽게 뒤진다', o:[{p:1, fx:{mat:[3,4]}, m:'부품을 챙겼다.'}]},
+         {l:'천장 아래까지 파고든다', o:[{p:.6, fx:{mat:[6,8]}, m:'깊숙한 곳에서 온전한 부품 상자를 찾았다.'},
+                                        {p:.4, fx:{mat:[0,1]}, m:'천장 일부가 무너졌다. 겨우 몇 개만 건졌다.'}]} ] },
+  { id:'truck', cat:'mat', ti:'뒤집힌 수송 트럭', tx:'화물칸이 반쯤 열려 있다. 엔진룸은 아직 멀쩡해 보인다.',
+    ch:[ {l:'화물칸을 뒤진다', o:[{p:1, fx:{mat:[4,5]}, m:'철근과 볼트 상자를 꺼냈다.'}]},
+         {l:'엔진을 뜯어낸다', o:[{p:1, fx:{mat:3, xp:{M:6}}, m:'구조를 익히며 부품을 떼어냈다.'}]} ] },
+  { id:'pylon', cat:'mat', ti:'쓰러진 송전탑', tx:'구리선이 풀밭 위로 늘어져 있다. 철골은 아직 단단하다.',
+    ch:[ {l:'구리선만 걷는다', o:[{p:1, fx:{mat:3}, m:'구리선을 감아 왔다.'}]},
+         {l:'철골을 해체한다 (자재 1)', cost:{mat:1}, o:[{p:1, fx:{mat:[6,7]}, m:'굵은 철골을 통째로 떼어 왔다.'}]} ] },
+  { id:'crystal', cat:'mat', ti:'검은 결정', tx:'악마가 스친 자리에 검은 결정이 자라 있다. 만지면 미지근하다.',
+    ch:[ {l:'망치로 깨서 챙긴다', o:[{p:.7, fx:{mat:[4,5]}, m:'결정 조각이 좋은 합금 재료가 된다.'},
+                                    {p:.3, fx:{mat:1}, m:'결정이 터지며 조각이 튀었다. 하나만 건졌다.'}]},
+         {l:'건드리지 않는다', o:[{p:1, fx:{}, m:'그냥 지나쳤다.'}]} ] },
+  { id:'trap', cat:'ani', ti:'덫에 걸린 늑대', tx:'다리를 다친 늑대가 낮게 으르렁거린다. 눈에는 겁이 가득하다.',
+    ch:[ {l:'덫을 풀어 준다', o:[{p:.8, fx:{unit:'wolf'}, m:'늑대가 한동안 지켜보다가 곁으로 다가왔다.'},
+                              {p:.2, fx:{}, m:'풀려난 늑대는 숲으로 달아났다.'}]},
+         {l:'그냥 지나친다', o:[{p:1, fx:{}, m:'늑대의 울음이 한참 등 뒤에서 들렸다.'}]} ] },
+  { id:'piglet', cat:'ani', ti:'어미 잃은 새끼 멧돼지', tx:'진흙탕에서 새끼 멧돼지가 꿀꿀거리며 따라온다.',
+    ch:[ {l:'데려간다', o:[{p:1, fx:{unit:'boar'}, m:'멧돼지가 집까지 졸졸 따라왔다.'}]},
+         {l:'먹이만 주고 간다', o:[{p:1, fx:{}, m:'새끼는 수풀 속으로 사라졌다.'}]} ] },
+  { id:'rats', cat:'ani', ti:'곡물 창고의 들쥐 떼', tx:'쥐 떼가 곡식 자루를 갉고 있다. 수십 쌍의 눈이 이쪽을 본다.',
+    ch:[ {l:'먹이로 길들인다', o:[{p:1, fx:{unit:'rat'}, m:'쥐 떼가 먹이를 따라 집으로 이사 왔다.'}]},
+         {l:'쫓아내고 곡식을 챙긴다', o:[{p:1, fx:{mat:2}, m:'남은 곡식을 자재와 맞바꿨다.'}]} ] },
+  { id:'bear', cat:'ani', ti:'동굴 속 불곰', tx:'굶주린 불곰이 동굴 입구에서 킁킁댄다. 악마의 냄새에 예민해져 있다.', req:{A:3},
+    ch:[ {l:'먹이로 달랜다 (자재 2)', cost:{mat:2}, o:[{p:.6, fx:{unit:'bear'}, m:'불곰이 먹이를 삼키더니 순순히 따라왔다.'},
+                                                    {p:.4, fx:{}, m:'불곰은 먹이만 물고 동굴로 돌아갔다.'}]},
+         {l:'물러난다', o:[{p:1, fx:{}, m:'조용히 자리를 떴다.'}]} ] },
+  { id:'march', cat:'ref', ti:'피난민 행렬', tx:'해진 담요를 두른 사람들이 국도를 따라 걷고 있다. 아이도 섞여 있다.',
+    ch:[ {l:'집으로 들인다', o:[{p:1, fx:{ref:[2,3]}, m:'지친 사람들이 문턱을 넘어 들어왔다.'}]},
+         {l:'길만 알려 준다', o:[{p:1, fx:{mat:1}, m:'고마움의 표시로 통조림 하나를 받았다.'}]} ] },
+  { id:'soldier', cat:'ref', ti:'쓰러진 병사', tx:'철모를 쓴 병사가 도랑에 쓰러져 있다. 숨은 붙어 있다.',
+    ch:[ {l:'치료하고 받아들인다 (자재 1)', cost:{mat:1}, o:[{p:1, fx:{unit:'rifle', rank:1}, m:'병사가 눈을 뜨고 경례를 붙였다.'}]},
+         {l:'장비만 받아 온다', o:[{p:1, fx:{mat:2}, m:'쓸 만한 장구류를 챙겼다.'}]} ] },
+  { id:'cellar', cat:'ref', ti:'지하실의 가족', tx:'무너진 집 지하실에서 인기척이 난다. 밖으로 나오길 두려워하고 있다.',
+    ch:[ {l:'문을 열고 구한다', o:[{p:.6, fx:{ref:3}, m:'세 사람이 손을 잡고 올라왔다.'},
+                              {p:.4, fx:{ref:1}, m:'한 명만 남아 있었다. 나머지는 이미 떠난 뒤였다.'}]},
+         {l:'식량만 넣어 준다', o:[{p:1, fx:{}, m:'문틈으로 식량을 밀어 넣고 돌아섰다.'}]} ] },
+  { id:'flare', cat:'ref', ti:'붉은 신호탄', tx:'하늘로 붉은 신호탄이 솟는다. 폐건물 옥상에 생존자가 있다.',
+    ch:[ {l:'구하러 간다', o:[{p:1, fx:{ref:1, mat:2}, m:'생존자와 함께 상자에 든 물자도 얻었다.'}]} ] },
+  { id:'manual', cat:'spec', ti:'낡은 야전 교범', tx:'진흙이 묻은 교범이다. 진지 구축과 사격 요령이 빼곡하다.',
+    ch:[ {l:'읽어 본다', o:[{p:1, fx:{xp:{H:8}}, m:'교범의 요령을 익혔다.'}]} ] },
+  { id:'notes', cat:'spec', ti:'사냥꾼의 수첩', tx:'짐승의 발자국과 길들이는 법이 그림과 함께 적혀 있다.',
+    ch:[ {l:'읽어 본다', o:[{p:1, fx:{xp:{A:8}}, m:'짐승을 다루는 법을 익혔다.'}]} ] },
+  { id:'blue', cat:'spec', ti:'기계 설계도', tx:'기름 얼룩진 설계도가 공구함 아래에서 나왔다.',
+    ch:[ {l:'펼쳐 본다', o:[{p:1, fx:{xp:{M:8}}, m:'설계도의 구조를 익혔다.'}]} ] },
+  { id:'generator', cat:'spec', ti:'녹슨 발전기', tx:'절반쯤 녹슨 발전기 하나가 아직도 낮게 웅웅거린다. 뜯어보면 뭔가 배울 게 있을 것 같다.',
+    ch:[ {l:'분해해 본다', o:[{p:1, fx:{xp:{M:9}}, m:'발전기의 작동 원리를 이해했다.'}]},
+         {l:'그냥 지나친다', o:[{p:1, fx:{}, m:'괜히 건드렸다가 감전될까 봐 그냥 지나쳤다.'}]} ] },
+  { id:'trader', cat:'spec', ti:'떠돌이 상인', tx:'짐수레를 끄는 상인이 손을 든다. 수레 뒤에서 무언가 낑낑거린다.',
+    ch:[ {l:'자재 3을 내고 동물을 산다', cost:{mat:3}, o:[{p:1, fx:{unit:['wolf','boar','rat']}, m:'수레에서 동물을 내려 주었다.'}]},
+         {l:'거절한다', o:[{p:1, fx:{}, m:'상인은 어깨를 으쓱하고 떠났다.'}]} ] },
+  { id:'angelfall', cat:'spec', ti:'서른 번째 페이지', tx:'도감의 마지막 장을 덮는 순간, 하늘이 갈라지며 빛의 대열이 지상으로 내려온다. 그들은 당신이 이곳까지 이야기를 읽어냈다는 것을 이미 알고 있는 듯하다.', req:{codex:30},
+    ch:[ {l:'빛을 향해 손을 내민다', o:[{p:1, fx:{unit:'angel', rank:3}, m:'천사의 군대가 당신의 곁에 서기로 했다.'}]} ] },
+  { id:'trade', cat:'ref', ti:'떠돌이 학자와 상인', tx:'낡은 마차를 끄는 이들이 물물교환을 제안한다. "쓸모를 다한 것을 내게 맡기면, 필요한 것을 내어주지."',
+    ch:[ {l:'난민 3명을 내주고 지식을 배운다', cost:{ref:3}, o:[{p:1, fx:{xpRandom:12}, m:'학자가 낡은 책을 펼쳐 지식을 전수했다.'}]},
+         {l:'대원 한 명을 딸려 보내고 다른 대원을 받는다', cost:{unit:1}, o:[{p:1, fx:{unit:['wolf','bot','rifle','rat']}, m:'상인이 데려온 다른 대원을 소개해 주었다.'}]},
+         {l:'거절한다', o:[{p:1, fx:{}, m:'제안을 거절하고 돌아섰다.'}]} ] },
+];
+
+/* 특전 도감 — 대악마를 처치할 때마다 하나씩 순서대로 해금되는 30편의 이야기.
+   악마의 유래와 아포칼립스가 도래한 이유를 다룬다. */
+const CODEX = [
+  { t:'황금빛 나날', b:'전쟁이 없었던 것은 아니다. 다만 잊을 만큼 오래 없었을 뿐. 사람들은 유리와 강철로 하늘을 채웠고, 배고픔이라는 단어는 박물관에나 있는 것이 되었다. 아무도 다음 세대가 이 모든 것을 잃을 것이라고는 생각하지 않았다.' },
+  { t:'채워지지 않는 그릇', b:'곳간이 넘쳐도 사람들은 그릇을 하나 더 얹었다. 이미 가진 것의 이름조차 기억하지 못하면서. 어느 밤, 금고 안에서 무언가가 처음으로 숨을 쉬었다는 사실을 알아챈 이는 아무도 없었다.' },
+  { t:'밤의 유흥', b:'낮의 얼굴과 밤의 얼굴이 다른 것은 흠이 아니라 자랑이었다. 사람들은 서로에게 더 깊이, 더 빠르게 빠져드는 법을 개발해 팔았다. 만족은 늘 다음 잔, 다음 얼굴 뒤에 있었다.' },
+  { t:'배부른 자들의 도시', b:'음식은 버려지기 위해 만들어지는 것처럼 넘쳐났다. 도시는 먹고, 먹고, 또 먹었다. 정작 배가 고픈 것은 도시 그 자체라는 사실을, 그 무렵엔 아무도 눈치채지 못했다.' },
+  { t:'거울 속의 낯선 얼굴', b:'처음엔 소문이었다. 거울 앞에서 몇 초 늦게 웃는 사람들. 의사들은 피로라고 했고, 언론은 다루지 않았다. 그들 중 누구도 다시는 예전 얼굴로 돌아오지 못했다는 것은, 훨씬 나중에야 밝혀졌다.' },
+  { t:'첫 번째 계약', b:'그는 정장을 입고 나타났다고 한다. 원하는 것을 말하면 값을 매겨 주겠다며. 서명한 사람은 자신이 무엇을 판 것인지 평생 알지 못했다 — 그것이 계약서에 적힌 유일한 조항이었으므로.' },
+  { t:'은행이 불탄 밤', b:'장부의 숫자가 스스로 움직이기 시작한 밤, 도시의 모든 금고 문이 동시에 열렸다. 안에서 쏟아진 것은 돈이 아니었다. 금빛으로 빛나는 무언가가, 처음으로 거리를 걸었다.' },
+  { t:'이름 없는 전염병', b:'정부는 그것을 집단 히스테리라 불렀다. 실종자는 이주자로, 사망자는 통계 오류로 처리되었다. 이름을 붙이지 않으면 존재하지 않는다는 믿음이, 가장 늦게 무너진 믿음이었다.' },
+  { t:'목격자들', b:'"뿔이 있었어요." "아니, 날개였어요." "그냥 그림자였어요, 그런데 그림자가 저를 봤어요." 증언은 매번 달랐다. 유일하게 같았던 것은, 모두가 그 밤 이후 다시는 어둠 속에서 편히 잠들지 못했다는 사실이었다.' },
+  { t:'도시가 잠긴 밤', b:'첫 번째 도시는 항복이 아니라 침묵으로 무너졌다. 방송이 끊기고, 다리가 끊기고, 마지막으로 사람들 사이의 믿음이 끊겼다. 그날 이후로 "밤"은 시간이 아니라 하나의 사건이 되었다.' },
+  { t:'마몬의 이름을 부르다', b:'학자 한 명이 오래된 책에서 그 이름을 찾아냈을 때, 이미 세 개의 도시가 잿더미였다. 이름을 아는 것은 힘이 아니었다 — 그저 두려움에게 얼굴을 준 것일 뿐이었다.' },
+  { t:'흩어진 사람들', b:'떠날 수 있는 자와 떠날 곳조차 없는 자로, 세상은 두 번 나뉘었다. 폐허가 된 국도 위에서 사람들은 걷고 또 걸었다. 살아남은 것은 가장 강한 자가 아니라, 가장 늦게까지 서로를 놓지 않은 자들이었다.' },
+  { t:'우리 집의 시작', b:'무너진 담장, 깨진 창문 하나. 그것이 전부였지만 지붕은 남아 있었다. 처음 이 집에 불을 피운 이는 이곳이 요새가 되리라고는, 열세 번의 밤을 버텨야 하리라고는 상상도 하지 못했다.' },
+  { t:'아스모데우스, 매혹의 군주', b:'두 번째 이름이 도착했을 때, 사람들은 이미 이름 붙이는 법을 배운 뒤였다. 아스모데우스는 문을 부수지 않았다. 그저 열어 달라고 속삭였을 뿐이었고, 놀랍도록 많은 문이 스스로 열렸다.' },
+  { t:'벨제부브의 만찬', b:'세 번째는 굶주려 있었다. 그러나 그가 원한 것은 살이나 피가 아니라, 사람들이 서로에게 품었던 마지막 다정함이었다. 그것을 다 먹어치운 자리에는, 파리 떼의 노래만 남았다.' },
+  { t:'파리 떼의 노래', b:'윙윙거리는 소리가 언제부터 들렸는지는 아무도 정확히 기억하지 못한다. 다만 그 소리가 들리는 곳마다, 사람들 사이의 거리가 조금씩 멀어졌다는 것만은 모두가 알고 있었다.' },
+  { t:'지옥의 서열', b:'마몬도, 아스모데우스도, 벨제부브도 정점이 아니었다. 그들은 문지기였다. 그 뒤에 무엇이 서 있는지 알아챈 자는, 대개 그 사실을 전할 틈도 없이 사라졌다.' },
+  { t:'잠든 것들', b:'더 오래되고, 더 깊이 잠든 것들이 있었다. 세 대악마의 향연은 사실 저녁 식사 종이었다 — 아래에서 무언가를 깨우기 위한, 아주 오래 걸린 초대장이었다.' },
+  { t:'메피스토의 속삭임', b:'메피스토는 힘으로 오지 않는다. 그는 질문으로 온다. "정말로 이것 없이 살 수 있겠어?" 그 질문에 단 한 번이라도 망설인 자는, 이미 절반쯤 그의 것이었다.' },
+  { t:'바알, 잊혀진 왕', b:'한때 그는 폭풍을 다스리는 왕이었고, 사람들은 그의 이름으로 밭에 씨를 뿌렸다. 시대가 그를 잊고 다른 이름을 섬기게 되었을 때, 잊혀진다는 것이 무엇을 낳는지 아무도 경고해주지 않았다.' },
+  { t:'폭풍의 재림', b:'수천 년의 침묵 끝에 그가 다시 하늘을 열었을 때, 그것은 복수가 아니라 그저 오래 미뤄둔 질문의 답이었다. 나를 잊은 대가를, 이제 치를 시간이라는.' },
+  { t:'디아블로라 불리는 것', b:'어떤 이들은 그것에서 뿔을 보았고, 어떤 이들은 불길을, 또 어떤 이들은 그저 자신이 가장 무서워하는 것의 얼굴을 보았다. 디아블로는 형태가 없다. 그것은 두려움이 스스로에게 붙인 이름일 뿐이다.' },
+  { t:'공포에는 형태가 없다', b:'군인은 그것을 총구 앞의 그림자로 보았고, 아이는 그것을 침대 밑의 소리로 들었다. 같은 것을 보았다고 말하는 두 사람은 없었다 — 오직 같은 크기로 떨었을 뿐.' },
+  { t:'별이 떨어진 자리', b:'모든 기록보다 오래된 폐허가 있다. 그곳의 벽에는 별 하나가 땅으로 떨어지는 그림이 새겨져 있었다. 그 별에게는 한때, 이름이 있었다.' },
+  { t:'샛별의 이름', b:'동트기 전 가장 밝게 빛나는 별을, 사람들은 오랫동안 희망의 전령이라 불렀다. 그 별이 스스로 빛을 등지기로 한 밤이 있었다는 것을, 지금은 아무도 노래하지 않는다.' },
+  { t:'최초의 균열', b:'그가 떨어진 자리에, 하늘과 땅 사이에 다시는 메울 수 없는 금이 갔다. 마몬도, 아스모데우스도, 그 무엇도 — 사실은 전부 그 하나의 균열을 통해 새어 나온 것이었다.' },
+  { t:'그가 등을 돌린 이유', b:'그는 파괴하기 위해 떨어진 것이 아니었다. 그는 다만 물었을 뿐이다. 완벽하게 설계된 세상에서 스스로 선택할 자유가 없다면, 그것을 사랑이라 부를 수 있는가. 아무도 답하지 않았고, 그는 답을 찾아 등을 돌렸다.' },
+  { t:'열세 번째 밤의 의미', b:'매번 같은 밤이 아니다. 이 집이 한 번 버텨낼 때마다, 아래에서는 다음번엔 반드시 충분할 무언가를 준비한다. 열세 번째 밤의 얼굴이 매번 달라지는 것은 우연이 아니다 — 그것은 경고다.' },
+  { t:'인간과 짐승과 기계', b:'악마들은 인간을 나누는 법을 안다. 탐욕과 절제로, 육신과 정신으로. 그러나 사람과 늑대와 기계가 한 대열에 나란히 서는 모습 앞에서는, 그들의 오래된 언어가 전부 무용해진다.' },
+  { t:'그리고 아침이 온다', b:'모든 밤이 끝나는 것은 아니지만, 이 밤은 끝났다. 지붕 위로 첫 햇살이 떨어지고, 집은 여전히 서 있다. 이야기는 여기서 멈추지 않는다 — 그저 다음 장을 넘길 손을 기다리고 있을 뿐이다.' },
+];
+
+
+'use strict';
+/* =====================  유틸  ===================== */
+function rnd(a, b) { if (b === undefined) { b = a; a = 0; } return a + Math.floor(Math.random() * (b - a + 1)); }
+function pick(arr) { return arr[rnd(0, arr.length - 1)]; }
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function key(x, y) { return x + ',' + y; }
+/* 한국어 조사(이/가, 을/를, 은/는, 과/와) 자동 선택 — 이름 마지막 글자의 받침 유무 판정 */
+function hasBatchim(word) {
+  const c = word.charCodeAt(word.length - 1);
+  if (c < 0xAC00 || c > 0xD7A3) return true;
+  return (c - 0xAC00) % 28 !== 0;
+}
+function josa(word, withB, withoutB) { return word + (hasBatchim(word) ? withB : withoutB); }
+function eun(w) { return josa(w, '은', '는'); }
+function i(w) { return josa(w, '이', '가'); }
+function eul(w) { return josa(w, '을', '를'); }
+function gwa(w) { return josa(w, '과', '와'); }
+
+/* =====================  새 게임  ===================== */
+function newGame() {
+  return {
+    cycle: 0, day: 1, phase: 'intro',
+    mat: 6, ref: 2,
+    techXP: { H: 0, A: 0, M: 0 },
+    house: { wall: 0, tower: 0, barracks: 0, infirm: 0, scout: 0 },
+    houseHp: HOUSE_BASE_HP, houseHpMax: HOUSE_BASE_HP,
+    roster: [], nextId: 1,
+    log: [],
+    stats: { kills: 0, nightsCleared: 0 },
+    night: null,
+    lastResult: null,
+    finalIdx: null,
+    selectedSquad: null,
+    codexCount: 0, lastCodexUnlock: null,
+    officerEventSeen: false,
+    gameLocked: false,
+  };
+}
+
+function addLog(S, msg) { S.log.unshift(msg); if (S.log.length > 40) S.log.length = 40; }
+
+/* =====================  파생 스탯  ===================== */
+function techLevel(S, route) {
+  const xp = S.techXP[route];
+  for (let lv = TIER_XP.length; lv >= 2; lv--) if (xp >= TIER_XP[lv - 1]) return lv;
+  return 1;
+}
+function rankOf(xp) {
+  if (xp >= RANK_XP[3]) return 3;
+  if (xp >= RANK_XP[2]) return 2;
+  if (xp >= RANK_XP[1]) return 1;
+  return 0;
+}
+/* 유닛의 현재 최대체력/공격/방어/이동/사거리 계산 (계급 성장 + 테크 특전 반영) */
+function deriveStats(S, u) {
+  const base = UT[u.type];
+  const rank = rankOf(u.xp);
+  let hpMax = base.hp + rank * (base.g.hp || 0);
+  let atk = base.atk + rank * (base.g.atk || 0);
+  let def = base.def;
+  let mov = base.mov, rng = base.rng;
+  for (const rt of base.rt) {
+    const lv = techLevel(S, rt);
+    if (rt === 'H') { if (lv >= 2) hpMax += 2; if (lv >= 3) atk += 1; if (lv >= 4) rng += 1; if (lv >= 5) def += 2; }
+    if (rt === 'A') { if (lv >= 2) hpMax += 3; if (lv >= 3) atk += 1; if (lv >= 4) mov += 1; if (lv >= 5) def += 2; }
+    if (rt === 'M') { if (lv >= 2) def += 1; if (lv >= 3) hpMax += 4; if (lv >= 4) rng += 1; if (lv >= 5) atk += 2; }
+  }
+  return { hpMax, atk, def, mov, rng, rank };
+}
+function syncUnit(S, u) {
+  const d = deriveStats(S, u);
+  const grew = d.hpMax - (u.hpMax || d.hpMax);
+  u.hpMax = d.hpMax; u.atk = d.atk; u.def = d.def; u.mov = d.mov; u.rng = d.rng; u.rank = d.rank;
+  if (u.hp == null) u.hp = d.hpMax;
+  else if (grew > 0) u.hp = clamp(u.hp + grew, 0, u.hpMax);
+  u.hp = clamp(u.hp, 0, u.hpMax);
+}
+function makeUnit(S, type, rankXp) {
+  const base = UT[type];
+  const u = {
+    id: S.nextId++, type, rt: base.rt.slice(), em: base.em, badge: base.badge || null,
+    name: base.n, role: base.role, fly: !!base.fly, sk: Object.assign({}, base.sk),
+    xp: rankXp || 0, hp: null, x: -1, y: -1, alive: true, cdLeft: 0,
+    statuses: [], kills: 0,
+  };
+  syncUnit(S, u);
+  u.hp = u.hpMax;
+  return u;
+}
+/* 참전 등급 (0=신병,1=베테랑,2=마스터) — 누적 킬 카운트 기반, 아군 전용 */
+function veteranTier(u) {
+  const k = u.kills || 0;
+  if (k >= VET_KILLS[2]) return 2;
+  if (k >= VET_KILLS[1]) return 1;
+  return 0;
+}
+function critChanceOf(u) { return isPlayerType(u.type) ? VET_CRIT[veteranTier(u)] : TUNE.crit; }
+function blockChanceOf(u) { return isPlayerType(u.type) ? VET_BLOCK[veteranTier(u)] : TUNE.block; }
+function powerScore(S) {
+  let p = 0;
+  for (const u of S.roster) p += u.atk * 2 + u.hpMax * 0.5;
+  p += (techLevel(S, 'H') + techLevel(S, 'A') + techLevel(S, 'M')) * 15;
+  return Math.round(p);
+}
+
+/* =====================  낮: 정찰/이벤트  ===================== */
+function outingsMax(S) { return OUTINGS_BASE + S.house.scout; }
+function reqMet(S, req) {
+  if (!req) return true;
+  return Object.keys(req).every(k => k === 'codex' ? S.codexCount >= req[k] : techLevel(S, k) >= req[k]);
+}
+const OFFICER_CHANCE = 0.2;
+function makeOfficerEvent(masters) {
+  const ch = masters.map(u => ({
+    l: `${u.em} ${u.name} (${RANKS[u.rt.length > 1 ? 'X' : u.rt[0]][u.rank]})을(를) 장교로 임명한다`,
+    officerTarget: u.id,
+    o: [{ p: 1, fx: {}, m: `${u.name}이(가) 장교로 임명되었다. 치명타의 위력이 완전히 달라질 것이다.` }],
+  }));
+  ch.push({ l: '거절한다', o: [{ p: 1, fx: {}, m: '이번엔 그냥 지나쳤다.' }] });
+  return {
+    id: 'officer', cat: 'spec', ti: '노련한 지휘관의 제안',
+    tx: '모든 기술이 정점에 달했다. 마스터 등급 대원 중 하나를 지휘관으로 세울 수 있다.',
+    ch,
+  };
+}
+function rollEvent(S, locId) {
+  if (!S.officerEventSeen && techLevel(S, 'H') >= 5 && techLevel(S, 'A') >= 5 && techLevel(S, 'M') >= 5) {
+    const masters = S.roster.filter(u => veteranTier(u) === 2 && !u.officer);
+    if (masters.length && Math.random() < OFFICER_CHANCE) { S.officerEventSeen = true; return makeOfficerEvent(masters); }
+  }
+  const loc = LOCS.find(l => l.id === locId);
+  const roll = Math.random();
+  let acc = 0, cat = 'mat';
+  for (const c in loc.w) { acc += loc.w[c]; if (roll <= acc) { cat = c; break; } }
+  const pool = EVENTS.filter(e => e.cat === cat && reqMet(S, e.req));
+  return pick(pool.length ? pool : EVENTS.filter(e => e.cat === cat));
+}
+function affordCost(S, cost) {
+  if (!cost) return true;
+  return Object.keys(cost).every(k => k === 'unit' ? S.roster.length > cost[k] : S[k] >= cost[k]);
+}
+function payCost(S, cost) { if (!cost) return; for (const k in cost) if (k !== 'unit') S[k] -= cost[k]; }
+/* 선택지 결과 적용: 자재/난민/유닛/경험치 지급 — 메시지와 함께 정확한 획득 내역(gains)을 반환 */
+function resolveChoice(S, choice) {
+  const gains = [];
+  if (choice.cost) {
+    for (const k in choice.cost) {
+      if (k === 'unit') {
+        const given = S.roster.slice().sort((a, b) => unitSellValue(a.type) - unitSellValue(b.type)).slice(0, choice.cost.unit);
+        given.forEach(gu => { S.roster = S.roster.filter(r => r.id !== gu.id); });
+        if (given.length) gains.push({ ic: given[0].em, txt: `${given.map(g => g.name).join(', ')} 떠나보냄` });
+      } else {
+        S[k] -= choice.cost[k];
+        gains.push({ ic: k === 'mat' ? '⚙️' : '👥', txt: `${k === 'mat' ? '자재' : '난민'} -${choice.cost[k]}` });
+      }
+    }
+  }
+  const roll = Math.random(); let acc = 0, out = choice.o[choice.o.length - 1];
+  for (const o of choice.o) { acc += o.p; if (roll <= acc) { out = o; break; } }
+  const fx = out.fx || {};
+  let msg = out.m;
+  const consolation = () => { const bonus = rnd(1, 3); S.mat += bonus; gains.push({ ic: '⚙️', txt: `자재 +${bonus}` }); msg = '얻을 게 없었지만 그래도 길에서 돌아오는 길에 자재를 챙겼다.'; };
+  if (fx.mat) { const amt = Array.isArray(fx.mat) ? rnd(fx.mat[0], fx.mat[1]) : fx.mat; S.mat += amt; gains.push({ ic: '⚙️', txt: `자재 +${amt}` }); }
+  if (fx.ref) { const amt = Array.isArray(fx.ref) ? rnd(fx.ref[0], fx.ref[1]) : fx.ref; S.ref += amt; gains.push({ ic: '👥', txt: `난민 +${amt}` }); }
+  if (fx.xp) {
+    if (Object.keys(fx.xp).every(r => techLevel(S, r) >= 5)) consolation();
+    else for (const r in fx.xp) { S.techXP[r] += fx.xp[r]; gains.push({ ic: ROUTES[r].ic, txt: `${ROUTES[r].n} 기술 경험치 +${fx.xp[r]}` }); }
+  }
+  if (fx.xpRandom) {
+    const routes = ['H', 'A', 'M'].filter(r => techLevel(S, r) < 5);
+    if (!routes.length) consolation();
+    else { const r = routes[rnd(0, routes.length - 1)]; S.techXP[r] += fx.xpRandom; gains.push({ ic: ROUTES[r].ic, txt: `${ROUTES[r].n} 기술 경험치 +${fx.xpRandom}` }); }
+  }
+  if (fx.unit) {
+    if (S.roster.length < ROSTER_MAX) {
+      const t = Array.isArray(fx.unit) ? pick(fx.unit) : fx.unit;
+      const u = makeUnit(S, t, fx.rank ? RANK_XP[clamp(fx.rank, 0, 3)] : 0);
+      S.roster.push(u);
+      gains.push({ ic: UT[t].em, txt: `${u.name} 합류${fx.rank ? ` (${RANKS[u.rt.length > 1 ? 'X' : u.rt[0]][u.rank]})` : ''}` });
+    } else {
+      gains.push({ ic: '🚫', txt: '대원이 가득 차 새 대원을 받아들이지 못했다' });
+    }
+  }
+  if (choice.officerTarget) {
+    const ou = S.roster.find(r => r.id === choice.officerTarget);
+    if (ou) { ou.officer = true; gains.push({ ic: '🎖️', txt: `${ou.name} 장교 임명 — 치명타 위력 대폭 상승` }); }
+  }
+  return { msg, gains };
+}
+
+/* =====================  낮: 집 시설 / 생산 / 융합  ===================== */
+function houseUpgradeCost(S, k) { const h = HOUSE[k]; const lv = S.house[k]; return lv < h.max ? h.cost[lv] : null; }
+function upgradeHouse(S, k) {
+  const cost = houseUpgradeCost(S, k); if (cost == null || S.mat < cost) return false;
+  S.mat -= cost; S.house[k]++;
+  if (k === 'wall') { S.houseHpMax = HOUSE_BASE_HP + 15 * S.house.wall; S.houseHp = S.houseHpMax; }
+  return true;
+}
+function canTrain(S, type) {
+  const m = UT[type].make; if (!m) return false;
+  const rt = UT[type].rt[0];
+  return techLevel(S, rt) >= m.tier && S.mat >= m.mat && S.ref >= (m.ref || 0) && S.roster.length < ROSTER_MAX;
+}
+function trainUnit(S, type) {
+  if (!canTrain(S, type)) return false;
+  const m = UT[type].make;
+  S.mat -= m.mat; S.ref -= (m.ref || 0);
+  S.roster.push(makeUnit(S, type, 0));
+  return true;
+}
+/* 융합 가능 여부와, 불가하다면 그 이유(테크 잠금 · 재료 부족 · 자재 부족)를 함께 반환 */
+function fuseStatus(S, hy) {
+  const f = UT[hy].fuse;
+  const lockedRoutes = Object.keys(f.unlock || {}).filter(r => techLevel(S, r) < f.unlock[r]);
+  if (lockedRoutes.length) return { ok: false, reason: lockedRoutes.map(r => `${ROUTES[r].n} ${f.unlock[r]}단계`).join(' · ') + ' 필요' };
+  const pool = S.roster.slice();
+  const missing = [];
+  for (const need of f.from) { const idx = pool.findIndex(u => u.type === need); if (idx < 0) missing.push(UT[need].n); else pool.splice(idx, 1); }
+  if (missing.length) {
+    const counts = {};
+    missing.forEach(n => counts[n] = (counts[n] || 0) + 1);
+    return { ok: false, reason: Object.entries(counts).map(([n, c]) => c > 1 ? `${n} ${c}마리` : n).join(' + ') + ' 필요' };
+  }
+  if (S.mat < f.mat) return { ok: false, reason: `자재 부족 (⚙️${f.mat} 필요)` };
+  if (S.roster.length >= ROSTER_MAX + f.from.length - 1) return { ok: false, reason: '대원 정원 초과' };
+  return { ok: true, reason: '' };
+}
+function canFuse(S, hy) { return fuseStatus(S, hy).ok; }
+/* 유닛 판매가 — 훈련 단계·융합 단계에 따라 1~5 자재 */
+function unitSellValue(type) {
+  const m = UT[type].make; if (m) return clamp(m.tier, 1, 5);
+  const f = UT[type].fuse; if (f) return clamp(2 + f.stage, 1, 5);
+  return 5;
+}
+function sellUnit(S, unitId) {
+  const idx = S.roster.findIndex(u => u.id === unitId); if (idx < 0) return 0;
+  const val = unitSellValue(S.roster[idx].type);
+  S.roster.splice(idx, 1);
+  S.mat += val;
+  if (S.selectedSquad) S.selectedSquad = S.selectedSquad.filter(id => id !== unitId);
+  return val;
+}
+function fuseUnit(S, hy) {
+  if (!canFuse(S, hy)) return false;
+  const f = UT[hy].fuse; S.mat -= f.mat;
+  let bonusXp = 0, bonusKills = 0;
+  for (const need of f.from) {
+    const idx = S.roster.findIndex(u => u.type === need);
+    bonusXp += S.roster[idx].xp;
+    bonusKills += S.roster[idx].kills || 0;
+    S.roster.splice(idx, 1);
+  }
+  const nu = makeUnit(S, hy, Math.floor(bonusXp / f.from.length));
+  nu.kills = bonusKills;
+  S.roster.push(nu);
+  return true;
+}
+
+/* =====================  밤: 전투 준비  ===================== */
+function barracksCap(S) { return 4 + S.house.barracks; }
+/* 출전 선택 — 유효하지 않은(로스터에서 사라진) 대원은 걸러내고, 최초 1회만 로스터 앞쪽 순서로 기본값을 채움 */
+function ensureDeploySelection(S) {
+  const cap = barracksCap(S);
+  if (S.selectedSquad == null) S.selectedSquad = S.roster.slice(0, cap).map(u => u.id);
+  S.selectedSquad = S.selectedSquad.filter(id => S.roster.some(u => u.id === id)).slice(0, cap);
+}
+function toggleDeploy(S, unitId) {
+  ensureDeploySelection(S);
+  const idx = S.selectedSquad.indexOf(unitId);
+  if (idx >= 0) { S.selectedSquad.splice(idx, 1); return true; }
+  if (S.selectedSquad.length >= barracksCap(S)) return false;
+  if (!S.roster.some(u => u.id === unitId)) return false;
+  S.selectedSquad.push(unitId);
+  return true;
+}
+function pickFinalBoss(S) {
+  const idx = clamp(Math.floor(powerScore(S) / POWER_HI) + S.cycle, 0, FINALS.length - 1);
+  return FINALS[idx];
+}
+function scaleFactor(S) { return 1 + TUNE.hpPerNight * (S.day - 1) + TUNE.hpPerCycle * S.cycle; }
+function bossCycleFactor(S) { return 1 + TUNE.hpPerCycle * S.cycle; }
+function spawnEnemy(S, type, x, y) {
+  const base = ET[type]; const f = base.boss ? bossCycleFactor(S) : scaleFactor(S);
+  const e = {
+    id: S.nextId++, type, em: base.em, name: base.n, title: base.title || null, boss: !!base.boss,
+    hp: Math.round(base.hp * f), hpMax: Math.round(base.hp * f), atk: Math.round(base.atk * f), def: base.def,
+    mov: base.mov, rng: base.rng, fly: !!base.fly, x, y, alive: true,
+    dot: base.dot || null, enrage: base.enrage || null, enraged: false,
+    ab: base.ab ? base.ab.map(a => Object.assign({ used: false, lastTurn: -99 }, a)) : [],
+    statuses: [],
+  };
+  return e;
+}
+/* =====================  전장 지도 생성  ===================== */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function isVillage(x, y) { return x >= VILLAGE.x && x < VILLAGE.x + VILLAGE.w && y >= VILLAGE.y && y < VILLAGE.y + VILLAGE.h; }
+function distToVillage(x, y) {
+  const dx = Math.max(0, VILLAGE.x - x, x - (VILLAGE.x + VILLAGE.w - 1));
+  const dy = Math.max(0, VILLAGE.y - y, y - (VILLAGE.y + VILLAGE.h - 1));
+  return dx + dy;
+}
+function mapPassable(map, x, y, fly) {
+  if (!inBounds(x, y) || isVillage(x, y)) return false;
+  if (fly) return true;
+  const k = key(x, y);
+  return !map.terrain[k] && !map.wall[k];
+}
+/* 여러 출발점에서 퍼져 나가는 최단 거리 지도 (유닛은 무시, 지형·마을만 고려) */
+function mapField(map, sources, fly) {
+  const d = new Map(), q = [];
+  for (const [x, y] of sources) { const k = key(x, y); if (!d.has(k) && mapPassable(map, x, y, fly)) { d.set(k, 0); q.push([x, y]); } }
+  while (q.length) {
+    const [cx, cy] = q.shift(); const cd = d.get(key(cx, cy));
+    for (const [dx, dy] of DIRS) {
+      const nx = cx + dx, ny = cy + dy, k = key(nx, ny);
+      if (d.has(k) || !mapPassable(map, nx, ny, fly)) continue;
+      d.set(k, cd + 1); q.push([nx, ny]);
+    }
+  }
+  return d;
+}
+function villageAttackTiles(rng) {
+  const out = [];
+  for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) { const d = distToVillage(x, y); if (d >= 1 && d <= rng) out.push([x, y]); }
+  return out;
+}
+function tilesAround(x0, y0, rng) {
+  const out = [];
+  for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) { const d = Math.abs(x - x0) + Math.abs(y - y0); if (d >= 1 && d <= rng) out.push([x, y]); }
+  return out;
+}
+/* 밤마다 지형·보급품을 새로 깐다. 같은 게임·같은 밤이면 항상 같은 지도 (재도전해도 동일) */
+function genMap(S) {
+  if (S.mapSeed == null) S.mapSeed = rnd(1, 999999999);
+  const R = mulberry32(S.mapSeed + S.cycle * 7919 + S.day * 104729);
+  const ri = (a, b) => a + Math.floor(R() * (b - a + 1));
+  const wall = {};
+  for (const [x, y] of (WALL_TILES[S.house.wall] || [])) wall[key(x, y)] = true;
+  const spawnSet = new Set(SPAWN_TILES.map(([x, y]) => key(x, y)));
+  const cand = [];   // 지형·보급품을 둘 수 있는 칸: 마을에서 4칸 이상 떨어지고 출현 지점이 아닌 곳
+  for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) if (distToVillage(x, y) >= 4 && !spawnSet.has(key(x, y))) cand.push([x, y]);
+  const candSet = new Set(cand.map(([x, y]) => key(x, y)));
+  const attackTiles = villageAttackTiles(1);
+  let terrain = {};
+  let ok = false;
+  for (let attempt = 0; attempt < 60 && !ok; attempt++) {
+    terrain = {};
+    const canPlace = (x, y) => candSet.has(key(x, y)) && !terrain[key(x, y)];
+    const walk = (type, len, pickDir) => {
+      let [x, y] = cand[ri(0, cand.length - 1)];
+      let placed = 0, guard = 0;
+      while (placed < len && guard++ < len * 8) {
+        if (canPlace(x, y)) { terrain[key(x, y)] = type; placed++; }
+        const [dx, dy] = pickDir();
+        if (inBounds(x + dx, y + dy)) { x += dx; y += dy; }
+      }
+    };
+    // 시냇물 — 한 방향으로 흐르며 이따금 옆으로 굽는다
+    const horiz = R() < 0.5, sgn = R() < 0.5 ? 1 : -1;
+    walk('water', ri(4, 5), () => R() < 0.7 ? (horiz ? [sgn, 0] : [0, sgn]) : (horiz ? [0, R() < 0.5 ? 1 : -1] : [R() < 0.5 ? 1 : -1, 0]));
+    // 숲 — 뭉쳐서 자란다
+    walk('tree', ri(3, 5), () => DIRS[ri(0, 3)]);
+    // 바위 — 여기저기 흩어져 있다
+    for (let r = ri(2, 3); r > 0; r--) { const [x, y] = cand[ri(0, cand.length - 1)]; if (canPlace(x, y)) terrain[key(x, y)] = 'rock'; }
+    // 모든 출현 지점에서 마을까지 지상으로 갈 수 있어야 한다
+    const f = mapField({ terrain, wall }, attackTiles, false);
+    ok = SPAWN_TILES.every(([x, y]) => f.has(key(x, y)));
+  }
+  if (!ok) terrain = {};
+  // 보급품 — 대원이 걸어서 닿을 수 있는 곳에, 서로 떨어뜨려 배치
+  const reach = mapField({ terrain, wall }, attackTiles, false);
+  const spots = cand.filter(([x, y]) => !terrain[key(x, y)] && reach.has(key(x, y)));
+  for (let k = spots.length - 1; k > 0; k--) { const j = ri(0, k); [spots[k], spots[j]] = [spots[j], spots[k]]; }
+  const n = 2 + (S.day >= 5 ? 1 : 0) + (S.day >= 10 ? 1 : 0);
+  const kinds = ['crate', R() < 0.55 ? 'rescue' : 'survivor'];
+  while (kinds.length < n) kinds.push(['crate', 'survivor', 'intel'][ri(0, 2)]);
+  const chosen = [];
+  for (const minGap of [3, 2, 1]) {
+    for (const s of spots) {
+      if (chosen.length >= n) break;
+      if (chosen.some(c => c === s || Math.abs(c[0] - s[0]) + Math.abs(c[1] - s[1]) < minGap)) continue;
+      chosen.push(s);
+    }
+  }
+  const pool = RESCUE_POOL.base.slice();
+  for (const r of ['H', 'A', 'M']) if (techLevel(S, r) >= 2) pool.push(RESCUE_POOL[r]);
+  const pickups = chosen.map(([x, y], idx) => {
+    const kind = kinds[idx];
+    const p = { id: idx + 1, kind, x, y, taken: false, lost: false };
+    if (kind === 'crate') p.amt = ri(2, 4) + Math.floor(S.day / 5);
+    if (kind === 'survivor') p.amt = R() < 0.4 ? 2 : 1;
+    if (kind === 'intel') { p.route = ['H', 'A', 'M'][ri(0, 2)]; p.amt = 10; }
+    if (kind === 'rescue') p.unit = pool[ri(0, pool.length - 1)];
+    return p;
+  });
+  return { terrain, wall, pickups };
+}
+
+/* =====================  밤: 전장 조회 헬퍼  ===================== */
+function inBounds(x, y) { return x >= 0 && x < GW && y >= 0 && y < GH; }
+function passable(S, x, y, fly) { return mapPassable(S.night.map, x, y, fly); }
+function terrainAt(S, x, y) { return S.night.map.terrain[key(x, y)] || null; }
+function isBarricade(S, x, y) { return !!S.night.map.wall[key(x, y)]; }
+function pickupAt(S, x, y) { return S.night.map.pickups.find(p => !p.taken && p.x === x && p.y === y) || null; }
+function pickupName(p) { return p.kind === 'rescue' ? `고립된 ${UT[p.unit].n}` : PICKUPS[p.kind].n; }
+function pickupsLeft(S) { return S.night.map.pickups.filter(p => !p.taken).length; }
+function occupant(S, x, y) {
+  for (const u of S.night.deployed) if (u.alive && u.x === x && u.y === y) return u;
+  for (const e of S.night.enemies) if (e.alive && e.x === x && e.y === y) return e;
+  return null;
+}
+/* (x,y) 근처에서 비어 있고 보급품도 없는 칸 */
+function freeTileNear(S, x0, y0, fly, maxR) {
+  const seen = new Set([key(x0, y0)]), q = [[x0, y0, 0]];
+  while (q.length) {
+    const [cx, cy, d] = q.shift();
+    if (d > 0 && passable(S, cx, cy, fly) && !occupant(S, cx, cy) && !pickupAt(S, cx, cy)) return [cx, cy];
+    if (d >= (maxR || 3)) continue;
+    for (const [dx, dy] of DIRS) {
+      const nx = cx + dx, ny = cy + dy, k = key(nx, ny);
+      if (seen.has(k) || !inBounds(nx, ny) || isVillage(nx, ny)) continue;
+      seen.add(k); q.push([nx, ny, d + 1]);
+    }
+  }
+  return null;
+}
+/* freeTileNear의 복수 버전 — 서로 겹치지 않는 빈 칸을 count개까지 찾는다 */
+function freeTilesNear(S, x0, y0, fly, count, maxR) {
+  const seen = new Set([key(x0, y0)]), q = [[x0, y0, 0]], out = [];
+  while (q.length && out.length < count) {
+    const [cx, cy, d] = q.shift();
+    if (d > 0 && passable(S, cx, cy, fly) && !occupant(S, cx, cy) && !pickupAt(S, cx, cy)) out.push([cx, cy]);
+    if (d >= (maxR || 4)) continue;
+    for (const [dx, dy] of DIRS) {
+      const nx = cx + dx, ny = cy + dy, k = key(nx, ny);
+      if (seen.has(k) || !inBounds(nx, ny) || isVillage(nx, ny)) continue;
+      seen.add(k); q.push([nx, ny, d + 1]);
+    }
+  }
+  return out;
+}
+function openSpawnTile(S, fly, prefer) {
+  const list = (prefer || SPAWN_TILES).filter(([x, y]) => passable(S, x, y, fly) && !occupant(S, x, y));
+  if (list.length) return prefer ? list[0] : list[rnd(0, list.length - 1)];
+  const seen = new Set(), q = SPAWN_TILES.map(t => t.slice());
+  q.forEach(([x, y]) => seen.add(key(x, y)));
+  while (q.length) {
+    const [cx, cy] = q.shift();
+    if (passable(S, cx, cy, fly) && !occupant(S, cx, cy)) return [cx, cy];
+    for (const [dx, dy] of DIRS) {
+      const nx = cx + dx, ny = cy + dy, k = key(nx, ny);
+      if (seen.has(k) || !inBounds(nx, ny) || isVillage(nx, ny)) continue;
+      seen.add(k); q.push([nx, ny]);
+    }
+  }
+  return null;
+}
+
+/* =====================  밤: 전투 시작  ===================== */
+function startNight(S) {
+  const def = NIGHTS[S.day];
+  let bossKey = def.boss === 'FINAL' ? pickFinalBoss(S) : (def.boss || null);
+  if (def.boss === 'FINAL') S.finalIdx = FINALS.indexOf(bossKey);
+  const cap = barracksCap(S);
+  ensureDeploySelection(S);
+  let squad = S.selectedSquad.map(id => S.roster.find(u => u.id === id)).filter(Boolean);
+  if (!squad.length) squad = S.roster.slice(0, cap);
+  squad = squad.slice(0, cap);
+  const snapshot = JSON.parse(JSON.stringify({ mat: S.mat, ref: S.ref, roster: S.roster, houseHp: S.houseHp }));
+  S.night = {
+    turn: 1, deployed: [], enemies: [], wavesLeft: def.w.slice(1),
+    bossKey, bossSpawnTurn: def.bossTurn || 1, bossSpawned: false,
+    selectedId: null, mode: 'idle', over: null,
+    turnLimitHit: false, downed: [],
+    map: genMap(S), loot: [], hint: null, villageHitTurn: -99, pendingSkill: null,
+    startSnapshot: snapshot,
+  };
+  squad.forEach((u, idx) => {
+    syncUnit(S, u); u.hp = u.hpMax;
+    u.moved = false; u.acted = false; u.cdLeft = 0; u.statuses = []; u.onceUsed = false;
+    const t = DEPLOY_TILES[idx] && !occupant(S, DEPLOY_TILES[idx][0], DEPLOY_TILES[idx][1]) ? DEPLOY_TILES[idx] : freeTileNear(S, 2, GH - 2, u.fly, 6);
+    u.x = t[0]; u.y = t[1];
+    S.night.deployed.push(u);
+  });
+  if (bossKey && S.night.bossSpawnTurn <= 1) spawnBoss(S);
+  spawnWave(S, def.w[0]);
+  addLog(S, INTRO[S.day]);
+  S.phase = 'nightIntro';
+}
+function beginCombat(S) { if (S.phase === 'nightIntro') S.phase = 'night'; }
+/* 보스를 실제로 전장에 등장시키고, 눈에 띄는 경고를 띄운다 */
+function spawnBoss(S) {
+  const bossKey = S.night.bossKey;
+  const t = openSpawnTile(S, !!ET[bossKey].fly, BOSS_SPAWN) || openSpawnTile(S, !!ET[bossKey].fly);
+  const e = spawnEnemy(S, bossKey, t[0], t[1]);
+  S.night.enemies.push(e);
+  S.night.bossSpawned = true;
+  const warning = `⚠️ ${i(e.title || '대악마')} 나타났다 — ${e.name}! ⚠️`;
+  addLog(S, warning);
+  S.night.hint = warning;
+}
+function spawnWave(S, wave) {
+  if (!wave) return;
+  for (const [type, n] of wave.l) {
+    for (let k = 0; k < n; k++) {
+      const t = openSpawnTile(S, !!ET[type].fly);
+      if (!t) continue;
+      S.night.enemies.push(spawnEnemy(S, type, t[0], t[1]));
+    }
+  }
+  addLog(S, '악마가 몰려온다!');
+}
+
+/* =====================  밤: 이동 판정 · 보급품  ===================== */
+function reachableTiles(S, u) {
+  const start = key(u.x, u.y);
+  const dist = new Map([[start, 0]]);
+  const q = [[u.x, u.y]];
+  while (q.length) {
+    const [cx, cy] = q.shift(); const d = dist.get(key(cx, cy));
+    if (d >= u.mov) continue;
+    for (const [dx, dy] of DIRS) {
+      const nx = cx + dx, ny = cy + dy, k = key(nx, ny);
+      if (dist.has(k) || !passable(S, nx, ny, u.fly)) continue;
+      if (occupant(S, nx, ny)) continue;
+      dist.set(k, d + 1); q.push([nx, ny]);
+    }
+  }
+  dist.delete(start);
+  return dist;
+}
+/* 거리 지도(field)를 따라 이동력 안에서 목표에 가장 가까워지는 칸 — 지형을 돌아서 간다 */
+function moveAlongField(S, mover, field) {
+  const start = key(mover.x, mover.y);
+  const steps = new Map([[start, 0]]), q = [[mover.x, mover.y]];
+  let best = [mover.x, mover.y], bestV = field.has(start) ? field.get(start) : Infinity, bestS = 0;
+  while (q.length) {
+    const [cx, cy] = q.shift(); const s = steps.get(key(cx, cy));
+    if (s >= mover.mov) continue;
+    for (const [dx, dy] of DIRS) {
+      const nx = cx + dx, ny = cy + dy, k = key(nx, ny);
+      if (steps.has(k) || !passable(S, nx, ny, mover.fly) || occupant(S, nx, ny)) continue;
+      steps.set(k, s + 1); q.push([nx, ny]);
+      const v = field.has(k) ? field.get(k) : Infinity;
+      if (v < bestV || (v === bestV && s + 1 < bestS)) { bestV = v; best = [nx, ny]; bestS = s + 1; }
+    }
+  }
+  return best;
+}
+function fieldFrom(S, sources, fly) { return mapField(S.night.map, sources, fly); }
+/* 대원과 대상 사이 직선이 비어 있는지 (돌진·급강하용) */
+function lineClear(S, u, t) {
+  if (u.x !== t.x && u.y !== t.y) return false;
+  const dx = Math.sign(t.x - u.x), dy = Math.sign(t.y - u.y);
+  let x = u.x + dx, y = u.y + dy;
+  while (x !== t.x || y !== t.y) {
+    if (!passable(S, x, y, u.fly) || occupant(S, x, y)) return false;
+    x += dx; y += dy;
+  }
+  return true;
+}
+/* 대원이 보급품 칸에 들어서면 회수 */
+function collectPickup(S, u) {
+  const p = pickupAt(S, u.x, u.y); if (!p) return;
+  p.taken = true;
+  const gains = [];
+  let note = '';
+  if (p.kind === 'crate') { S.mat += p.amt; gains.push({ ic: '⚙️', txt: `자재 +${p.amt}` }); }
+  else if (p.kind === 'survivor') { S.ref += p.amt; gains.push({ ic: '👥', txt: `난민 +${p.amt}` }); }
+  else if (p.kind === 'intel') { S.techXP[p.route] += p.amt; gains.push({ ic: ROUTES[p.route].ic, txt: `${ROUTES[p.route].n} 경험치 +${p.amt}` }); }
+  else if (p.kind === 'rescue') {
+    if (S.roster.length < ROSTER_MAX) {
+      const nu = makeUnit(S, p.unit, 0);
+      S.roster.push(nu);
+      const spot = freeTileNear(S, u.x, u.y, nu.fly, 3);
+      gains.push({ ic: nu.em, txt: `${nu.name} 합류` });
+      if (spot) {
+        nu.x = spot[0]; nu.y = spot[1]; nu.moved = true; nu.acted = true; nu.cdLeft = 0; nu.statuses = [];
+        S.night.deployed.push(nu);
+        note = ' · 다음 턴부터 싸운다';
+      } else note = ' · 전투가 끝나면 합류';
+    } else { S.mat += 2; gains.push({ ic: '⚙️', txt: '자재 +2' }); note = ' · 대원이 가득 차 보급품으로 대신 받았다'; }
+  }
+  S.night.loot.push(...gains);
+  addLog(S, `${PICKUPS[p.kind].em} ${eul(pickupName(p))} ${PICKUPS[p.kind].v} — ${gains.map(g => g.ic + ' ' + g.txt).join(', ')}${note}`);
+}
+/* 악마가 보급품 칸에 들어서면 망가진다 */
+function tramplePickup(S, e) {
+  const p = pickupAt(S, e.x, e.y); if (!p) return;
+  p.taken = true; p.lost = true;
+  addLog(S, `${i(e.name)} ${eul(pickupName(p))} ${PICKUPS[p.kind].lost}...`);
+}
+function dist(a, b) { return Math.abs(a.x - b.x) + Math.abs(a.y - b.y); }
+function isPlayerType(type) { return !!UT[type]; }
+
+/* =====================  전투: 피해/상태  ===================== */
+function computeDamage(attacker, target, mult) {
+  let raw = attacker.atk * (mult || 1);
+  const isCrit = Math.random() < critChanceOf(attacker);
+  if (isCrit) raw *= (attacker.officer ? 3 : 2);
+  const isBlocked = Math.random() < blockChanceOf(target);
+  if (isBlocked) raw *= 0.5;
+  return { dmg: Math.max(1, Math.round(raw - (target.def || 0))), isCrit, isBlocked };
+}
+function checkEnrage(S, boss) {
+  if (boss.enrage && !boss.enraged && boss.hp <= boss.hpMax * boss.enrage) {
+    boss.enraged = true; boss.atk = Math.round(boss.atk * 1.5);
+    addLog(S, `${i(boss.name)} 분노했다! 공격력이 크게 오른다.`);
+  }
+}
+function applyDamage(S, target, dmg) {
+  target.hp = clamp(target.hp - dmg, 0, target.hpMax);
+  if (target.boss) checkEnrage(S, target);
+  if (target.hp <= 0 && target.alive) {
+    target.alive = false;
+    if (isPlayerType(target.type)) { addLog(S, `${i(target.name)} 쓰러졌다...`); S.night.downed.push(target.id); }
+    else { S.stats.kills++; addLog(S, `${eul(target.name)} 쓰러뜨렸다!`); }
+    return true;
+  }
+  return false;
+}
+function addStatus(u, st) { u.statuses.push(Object.assign({}, st)); }
+function creditXp(S, attacker, dmg, killed) {
+  if (!isPlayerType(attacker.type)) return;
+  const gain = Math.round(dmg * 0.5) + (killed ? 5 : 0);
+  attacker.xp += gain;
+  for (const rt of attacker.rt) S.techXP[rt] += gain;
+  if (killed) attacker.kills = (attacker.kills || 0) + 1;
+}
+function hitTag(isCrit, isBlocked) { return (isCrit ? ' (치명타!)' : '') + (isBlocked ? ' (방어!)' : ''); }
+function doAttack(S, attacker, target, mult) {
+  const { dmg, isCrit, isBlocked } = computeDamage(attacker, target, mult || 1);
+  const died = applyDamage(S, target, dmg);
+  addLog(S, `${i(attacker.name)} ${target.name}에게 ${dmg}의 피해${hitTag(isCrit, isBlocked)}`);
+  creditXp(S, attacker, dmg, died);
+  return died;
+}
+function tickStatuses(S) {
+  const all = S.night.deployed.concat(S.night.enemies).filter(u => u.alive);
+  for (const u of all) {
+    for (const st of u.statuses.slice()) {
+      if (st.dps && u.alive) { applyDamage(S, u, st.dps); if (u.alive) addLog(S, `${i(u.name)} ${st.n} 피해 ${st.dps}`); }
+      st.turns--;
+      if (st.turns <= 0 && st.defBuff) u.def -= st.defBuff;
+      if (st.turns <= 0 && st.atkBuff) u.atk -= st.atkBuff;
+    }
+    u.statuses = u.statuses.filter(s => s.turns > 0);
+  }
+  for (const u of S.night.deployed.filter(u => u.alive)) { u.moved = false; u.acted = false; if (u.cdLeft > 0) u.cdLeft--; }
+}
+
+/* =====================  보스 특수 능력  ===================== */
+function tryBossAbility(S, boss) {
+  for (const ab of boss.ab) if (ab.first && !ab.used && S.night.turn >= ab.first) return ab;
+  for (const ab of boss.ab) if (ab.ev && (S.night.turn - ab.lastTurn) >= ab.ev) return ab;
+  return null;
+}
+function executeAbility(S, boss, ab) {
+  if (ab.k === 'summon') {
+    const fly = !!ET[ab.type].fly;
+    for (let k = 0; k < ab.n; k++) {
+      const t = freeTileNear(S, boss.x, boss.y, fly, 3) || openSpawnTile(S, fly);
+      if (t) S.night.enemies.push(spawnEnemy(S, ab.type, t[0], t[1]));
+    }
+    addLog(S, `${i(boss.name)} ${eul(ET[ab.type].n)} 불러냈다!`);
+    return true;
+  }
+  if (ab.k === 'fireball') {
+    const targets = S.night.deployed.filter(u => u.alive && dist(boss, u) <= (ab.rng || 99));
+    if (!targets.length) return false;
+    const t = pick(targets); const { dmg, isCrit, isBlocked } = computeDamage(boss, t, 1.3);
+    applyDamage(S, t, dmg); addLog(S, `${boss.name}의 화염구가 ${eul(t.name)} 덮쳤다! ${dmg}의 피해${hitTag(isCrit, isBlocked)}`);
+    return true;
+  }
+  if (ab.k === 'slam') {
+    const targets = S.night.deployed.filter(u => u.alive && dist(boss, u) <= 1);
+    if (!targets.length) return false;
+    const t = targets.sort((a, b) => dist(boss, a) - dist(boss, b))[0];
+    const { dmg, isCrit, isBlocked } = computeDamage(boss, t, 1.6);
+    applyDamage(S, t, dmg); addLog(S, `${boss.name}의 강타! ${i(t.name)} ${dmg}의 피해를 입었다${hitTag(isCrit, isBlocked)}`);
+    return true;
+  }
+  if (ab.k === 'plague') {
+    const targets = S.night.deployed.filter(u => u.alive && dist(boss, u) <= (ab.rng || 2));
+    if (!targets.length) return false;
+    targets.forEach(t => addStatus(t, { n: '역병', dps: ab.d, turns: 2 }));
+    addLog(S, `${i(boss.name)} 역병을 퍼뜨렸다!`);
+    return true;
+  }
+  return false;
+}
+
+/* =====================  적 AI 턴  ===================== */
+function attackVillage(S, e) {
+  const crit = Math.random() < critChanceOf(e);
+  const dmg = e.atk * (crit ? 2 : 1);
+  S.houseHp = clamp(S.houseHp - dmg, 0, S.houseHpMax);
+  S.night.villageHitTurn = S.night.turn;
+  addLog(S, `${i(e.name)} 마을을 공격했다! 마을 체력 -${dmg}${crit ? ' (치명타!)' : ''}`);
+  checkNightEnd(S);
+}
+/* 사거리 안에 대원이 있으면 대원을, 없고 마을이 닿으면 마을을 친다 */
+function enemyStrike(S, e) {
+  const inRange = S.night.deployed.filter(u => u.alive && dist(e, u) <= e.rng);
+  if (inRange.length) {
+    inRange.sort((a, b) => dist(e, a) - dist(e, b) || a.hp - b.hp);
+    doAttack(S, e, inRange[0], 1);
+    return true;
+  }
+  if (distToVillage(e.x, e.y) <= e.rng) { attackVillage(S, e); return true; }
+  return false;
+}
+/* 망루 — 매 턴 마을 근처의 가장 가까운 악마를 쏜다 */
+function towerFire(S) {
+  const lv = S.house.tower; if (!lv) return;
+  const targets = S.night.enemies.filter(e => e.alive && distToVillage(e.x, e.y) <= TOWER_RNG);
+  if (!targets.length) return;
+  targets.sort((a, b) => distToVillage(a.x, a.y) - distToVillage(b.x, b.y) || a.hp - b.hp);
+  const t = targets[0];
+  const dmg = Math.max(1, TUNE.towerBase + TUNE.towerPer * lv - (t.def || 0));
+  addLog(S, `🔭 망루가 ${eul(t.name)} 저격했다! ${dmg}의 피해`);
+  applyDamage(S, t, dmg);
+  checkNightEnd(S);
+}
+function enemyTurn(S) {
+  towerFire(S);
+  for (const e of S.night.enemies) {
+    if (!e.alive || S.night.over) continue;
+    if (e.statuses.some(s => s.stun)) { addLog(S, `${i(e.name)} 기절해 움직이지 못한다.`); continue; }
+    if (e.boss) {
+      const ab = tryBossAbility(S, e);
+      if (ab) {
+        const fired = executeAbility(S, e, ab);
+        if (fired) { if (ab.first) ab.used = true; ab.lastTurn = S.night.turn; checkNightEnd(S); continue; }
+      }
+    }
+    if (enemyStrike(S, e)) { checkNightEnd(S); continue; }
+    // 목표 정하기: 가까이(AGGRO칸) 있는 대원을 쫓되, 멀리 돌아가야 하면 마을로 향한다
+    let field = null;
+    const near = S.night.deployed.filter(u => u.alive && dist(e, u) <= AGGRO).sort((a, b) => dist(e, a) - dist(e, b))[0];
+    if (near) {
+      const cf = fieldFrom(S, tilesAround(near.x, near.y, e.rng), e.fly);
+      const cd = cf.get(key(e.x, e.y));
+      if (cd !== undefined && cd <= AGGRO + 2) field = cf;
+    }
+    if (!field) field = fieldFrom(S, villageAttackTiles(e.rng), e.fly);
+    const [nx, ny] = moveAlongField(S, e, field);
+    e.x = nx; e.y = ny;
+    tramplePickup(S, e);
+    enemyStrike(S, e);
+    checkNightEnd(S);
+  }
+}
+function checkNightEnd(S) {
+  if (S.night.over) return;
+  if (S.houseHp <= 0) { S.night.over = 'defeat'; return; }
+  const enemiesLeft = S.night.enemies.some(e => e.alive);
+  const moreWaves = S.night.wavesLeft.length > 0;
+  const bossPending = S.night.bossKey && !S.night.bossSpawned;
+  const aliveUnits = S.night.deployed.some(u => u.alive);
+  if (!aliveUnits && (enemiesLeft || moreWaves || bossPending)) { S.night.over = 'defeat'; return; }
+  if (!enemiesLeft && !moreWaves && !bossPending) { S.night.over = 'victory'; return; }
+}
+
+/* =====================  플레이어 조작  ===================== */
+function skillTargets(S, u) {
+  const sk = u.sk; if (!sk || u.cdLeft > 0) return [];
+  const rng = sk.rng || u.rng;
+  if (sk.k === 'heal') return S.night.deployed.filter(a => a.alive && a.hp < a.hpMax && dist(u, a) <= rng && (!sk.only || a.rt.includes(sk.only)));
+  if (sk.k === 'cleave' || sk.k === 'buff' || sk.k === 'judgment' || sk.k === 'multiply') return [];
+  if (sk.k === 'charge') return S.night.enemies.filter(e => e.alive && dist(u, e) <= sk.dist && lineClear(S, u, e));
+  return S.night.enemies.filter(e => e.alive && dist(u, e) <= rng);
+}
+/* 스킬을 실제로 쓰기 전에 영향 범위를 미리 보여주기 위한 계산 (확인/취소 단계용) */
+function skillAoeTiles(S, u, targetId) {
+  const sk = u.sk;
+  const t = targetId != null ? (S.night.enemies.find(e => e.id === targetId) || S.night.deployed.find(a => a.id === targetId)) : null;
+  if (sk.k === 'cleave') return tilesAround(u.x, u.y, 1);
+  if (sk.k === 'judgment') return S.night.enemies.filter(e => e.alive).map(e => [e.x, e.y]);
+  if (sk.k === 'buff') return [[u.x, u.y], ...tilesAround(u.x, u.y, sk.rad)];
+  if (sk.k === 'multiply') return freeTilesNear(S, u.x, u.y, u.fly, sk.copies - 1, 5);
+  if (!t) return [];
+  if (sk.k === 'aoe') return [[t.x, t.y], ...tilesAround(t.x, t.y, 1)];
+  if (sk.k === 'charge') {
+    const dx = Math.sign(t.x - u.x), dy = Math.sign(t.y - u.y);
+    const path = []; let x = u.x, y = u.y;
+    while (dist({ x, y }, t) > 1) { x += dx; y += dy; path.push([x, y]); }
+    path.push([t.x, t.y]);
+    return path;
+  }
+  return [[t.x, t.y]];
+}
+function tryMove(S, id, tx, ty) {
+  const u = S.night.deployed.find(d => d.id === id);
+  if (!u || !u.alive || u.moved) return false;
+  if (!reachableTiles(S, u).has(key(tx, ty))) return false;
+  u.x = tx; u.y = ty; u.moved = true;
+  collectPickup(S, u);
+  return true;
+}
+function tryAttack(S, id, targetId) {
+  const u = S.night.deployed.find(d => d.id === id);
+  if (!u || !u.alive || u.acted) return false;
+  const t = S.night.enemies.find(e => e.id === targetId && e.alive);
+  if (!t || dist(u, t) > u.rng) return false;
+  doAttack(S, u, t, 1); u.acted = true;
+  checkNightEnd(S);
+  return true;
+}
+function trySkill(S, id, targetId) {
+  const u = S.night.deployed.find(d => d.id === id);
+  if (!u || !u.alive || u.acted || u.cdLeft > 0) return false;
+  const sk = u.sk; if (!sk) return false;
+  if (sk.once && u.onceUsed) return false;
+  const rng = sk.rng || u.rng;
+  let ok = false;
+  if (sk.k === 'cleave') {
+    const targets = S.night.enemies.filter(e => e.alive && dist(u, e) <= 1);
+    if (!targets.length) return false;
+    targets.forEach(t => doAttack(S, u, t, sk.mult));
+    ok = true;
+  } else if (sk.k === 'multiply') {
+    const need = sk.copies - 1;
+    const spots = freeTilesNear(S, u.x, u.y, u.fly, need, 5);
+    if (spots.length < need) return false;
+    for (const [x, y] of spots) {
+      const nu = makeUnit(S, u.type, u.xp);
+      nu.x = x; nu.y = y; nu.moved = true; nu.acted = true; nu.cdLeft = 0; nu.statuses = []; nu.onceUsed = true; nu.kills = 0;
+      S.roster.push(nu);
+      S.night.deployed.push(nu);
+    }
+    addLog(S, `${i(u.name)} ${eul(sk.n)} 사용해 동료를 ${need}기 더 만들어냈다!`);
+    ok = true;
+  } else if (sk.k === 'judgment') {
+    const targets = S.night.enemies.filter(e => e.alive);
+    if (!targets.length) return false;
+    targets.forEach(t => doAttack(S, u, t, sk.mult));
+    ok = true;
+  } else if (sk.k === 'buff') {
+    const allies = S.night.deployed.filter(a => a.alive && dist(u, a) <= sk.rad);
+    allies.forEach(a => {
+      const st = { n: sk.n, turns: 1 };
+      if (sk.def) { st.defBuff = sk.def; a.def += sk.def; }
+      if (sk.atk) { st.atkBuff = sk.atk; a.atk += sk.atk; }
+      addStatus(a, st);
+    });
+    addLog(S, `${i(u.name)} ${eul(sk.n)} 사용했다.`);
+    ok = true;
+  } else if (sk.k === 'heal') {
+    const t = S.night.deployed.find(a => a.id === targetId && a.alive);
+    if (!t || dist(u, t) > rng || (sk.only && !t.rt.includes(sk.only))) return false;
+    t.hp = clamp(t.hp + sk.amt, 0, t.hpMax);
+    addLog(S, `${i(u.name)} ${t.name}의 체력을 ${sk.amt} 회복시켰다.`);
+    ok = true;
+  } else if (sk.k === 'charge') {
+    const t = S.night.enemies.find(e => e.id === targetId && e.alive);
+    if (!t || dist(u, t) > sk.dist || !lineClear(S, u, t)) return false;
+    const dx = Math.sign(t.x - u.x), dy = Math.sign(t.y - u.y);
+    while (dist(u, t) > 1) { u.x += dx; u.y += dy; collectPickup(S, u); }
+    const died = doAttack(S, u, t, sk.mult);
+    if (!died && sk.knock) {
+      let nx = t.x, ny = t.y;
+      for (let k = 0; k < sk.knock; k++) {
+        const cx = nx + dx, cy = ny + dy;
+        if (passable(S, cx, cy, t.fly) && !occupant(S, cx, cy)) { nx = cx; ny = cy; } else break;
+      }
+      t.x = nx; t.y = ny;
+      tramplePickup(S, t);
+    }
+    ok = true;
+  } else {
+    const t = S.night.enemies.find(e => e.id === targetId && e.alive);
+    if (!t || dist(u, t) > rng) return false;
+    const died = doAttack(S, u, t, sk.mult);
+    if (!died) {
+      if (sk.dot) addStatus(t, { n: sk.dot.n, dps: sk.dot.d, turns: sk.dot.t });
+      if (sk.stun) addStatus(t, { stun: true, turns: sk.stun });
+    }
+    if (sk.k === 'aoe') {
+      const around = S.night.enemies.filter(e => e.alive && e.id !== t.id && Math.abs(e.x - t.x) + Math.abs(e.y - t.y) === 1);
+      around.forEach(e => doAttack(S, u, e, sk.mult));
+    }
+    ok = true;
+  }
+  if (ok) { u.acted = true; u.cdLeft = sk.cd; if (sk.once) u.onceUsed = true; checkNightEnd(S); }
+  return ok;
+}
+function endPlayerTurn(S) {
+  S.night.selectedId = null; S.night.mode = 'idle'; S.night.pendingSkill = null;
+  enemyTurn(S);
+  if (!S.night.over) checkNightEnd(S);
+  if (S.night.over) { finalizeNightIfOver(S); return; }
+  S.night.turn++;
+  if (S.night.turn > TURN_LIMIT) { S.night.over = 'defeat'; S.night.turnLimitHit = true; finalizeNightIfOver(S); return; }
+  while (S.night.wavesLeft.length && S.night.turn >= S.night.wavesLeft[0].t) spawnWave(S, S.night.wavesLeft.shift());
+  if (S.night.bossKey && !S.night.bossSpawned && S.night.turn >= S.night.bossSpawnTurn) spawnBoss(S);
+  tickStatuses(S);
+}
+
+/* =====================  낮/밤 전환  ===================== */
+function finalizeNightIfOver(S) {
+  S.lastCodexUnlock = null;
+  if (S.night.over === 'victory') {
+    const infirm = S.house.infirm;
+    S.night.downed.forEach((id, i) => {
+      const u = S.roster.find(r => r.id === id); if (!u) return;
+      if (i < infirm) { u.alive = true; u.hp = 1; } else { S.roster = S.roster.filter(r => r.id !== id); }
+    });
+    S.stats.nightsCleared++;
+    addLog(S, '밤을 버텨냈다.');
+    if (S.night.bossKey && S.codexCount < CODEX.length) {
+      S.lastCodexUnlock = S.codexCount;
+      S.codexCount++;
+    }
+  } else {
+    addLog(S, S.night.turnLimitHit ? '너무 늦어버렸다...' : '집이 무너졌다...');
+  }
+  const pk = S.night.map ? S.night.map.pickups : [];
+  S.lastResult = { win: S.night.over === 'victory', day: S.day, kills: S.stats.kills, boss: S.night.bossKey, finalIdx: S.finalIdx,
+    loot: S.night.loot ? S.night.loot.slice() : [], missed: pk.filter(p => !p.taken || p.lost).length };
+  S.phase = 'result';
+}
+function newDay(S) {
+  S.roster.forEach(u => { syncUnit(S, u); u.hp = u.hpMax; u.statuses = []; });
+  S.houseHp = S.houseHpMax;   // 낮 동안 마을 사람들이 무너진 곳을 고친다
+  S.outingsLeft = outingsMax(S);
+  S.night = null;   // 지난 밤의 전장 데이터는 더 이상 필요 없다 — 저장 용량도 아낀다
+  S.phase = 'day';
+}
+function proceedFromResult(S) {
+  if (S.lastResult.win) {
+    if (S.day >= FINAL_NIGHT) {
+      if (S.night && S.night.deployed && S.night.deployed.some(u => u.type === 'angel')) S.gameLocked = true;
+      S.phase = 'ending';
+      return;
+    }
+    S.day++; newDay(S);
+  } else { S.phase = 'gameover'; }
+}
+function retryNight(S) {
+  const snap = S.night.startSnapshot;
+  S.mat = snap.mat; S.ref = snap.ref; S.roster = snap.roster;
+  if (snap.houseHp != null) S.houseHp = snap.houseHp;
+  startNight(S);
+}
+function startNewCycle(S) {
+  S.cycle++; S.day = 1; S.finalIdx = null; S.stats.nightsCleared = 0;
+  S.officerEventSeen = false;
+  S.houseHpMax = HOUSE_BASE_HP + 15 * S.house.wall; S.houseHp = S.houseHpMax;
+  newDay(S);
+}
+
+
+'use strict';
+let S = newGame();
+const $app = () => document.getElementById('app');
+function setMode(m) { document.documentElement.setAttribute('data-mode', m); }
+function pct(v, max) { return Math.max(0, Math.min(100, Math.round((v / max) * 100))); }
+
+/* =====================  저장 (기기 안에만 보관)  ===================== */
+/* 자동 저장 1칸 + 직접 고르는 저장 슬롯 3칸. 설치형 앱(홈 화면)에서는 사파리와 분리된 앱 전용 저장 공간을 쓴다 */
+const SAVE_KEY = 'tenNights_save_v1';
+const SLOTS = [
+  { key: SAVE_KEY, mark: '자동', label: '자동 저장', auto: true },
+  { key: 'tenNights_slot_1', mark: '1', label: '슬롯 1' },
+  { key: 'tenNights_slot_2', mark: '2', label: '슬롯 2' },
+  { key: 'tenNights_slot_3', mark: '3', label: '슬롯 3' },
+];
+const TRANSIENT = new Set(['saveModalOpen', 'codexOpen', 'saveMsg', 'renamingUnitId', 'saveConfirm', 'importPreview']);
+const IN_FRAME = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
+function serializeState(s) { return JSON.stringify(Object.assign({}, s, { _savedAt: Date.now() }), (k, v) => TRANSIENT.has(k) ? undefined : v); }
+function validSave(o) { return !!(o && typeof o === 'object' && o.phase && Array.isArray(o.roster) && o.techXP && typeof o.day === 'number'); }
+/* 예전 버전 저장에 없는 항목은 기본값으로 채운다 */
+function migrateSave(o) {
+  const base = newGame();
+  for (const k in base) if (o[k] === undefined) o[k] = base[k];
+  TRANSIENT.forEach(k => { delete o[k]; });
+  return o;
+}
+function readSave(key) { try { const raw = localStorage.getItem(key); if (!raw) return null; const o = JSON.parse(raw); return validSave(o) ? migrateSave(o) : null; } catch (e) { return null; } }
+let persistAsked = false;
+function writeSave(key, s) {
+  try {
+    localStorage.setItem(key, serializeState(s));
+    if (!persistAsked) { persistAsked = true; try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} }
+    return true;
+  } catch (e) { return false; }
+}
+function removeSave(key) { try { localStorage.removeItem(key); } catch (e) {} }
+function saveGame(s) { return writeSave(SAVE_KEY, s); }
+function loadGame() { return readSave(SAVE_KEY); }
+function clearSave() { removeSave(SAVE_KEY); }
+function timeAgo(t) {
+  const sec = Math.floor((Date.now() - t) / 1000);
+  if (sec < 60) return '방금 전';
+  if (sec < 3600) return `${Math.floor(sec / 60)}분 전`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)}시간 전`;
+  const d = new Date(t); return `${d.getMonth() + 1}월 ${d.getDate()}일`;
+}
+function saveSummary(o) {
+  const when = o.phase === 'ending' ? '결말' : (o.phase === 'day' || o.phase === 'deploy') ? `${o.day}일째 낮` : `${o.day}번째 밤`;
+  return { title: `${o.cycle + 1}회차 ${when}`, detail: `대원 ${o.roster.length}명 · ⚙️${o.mat} · 👥${o.ref} · 도감 ${o.codexCount || 0}/${CODEX.length}`, when: o._savedAt ? timeAgo(o._savedAt) : '' };
+}
+let saveModalWasOpen = false;
+function canSaveNow() { return S.phase === 'day' || S.phase === 'deploy'; }
+function hasAnySave() { return SLOTS.some(sl => readSave(sl.key)); }
+/* 저장 파일 내보내기 — 아이폰에서는 공유 시트("파일에 저장")로, 그 밖에서는 내려받기로 */
+async function exportSaveFile() {
+  const text = serializeState(S);
+  const name = `13번째밤-${S.cycle + 1}회차-${S.day}일째.json`;
+  const tryShare = async (type) => {
+    const file = new File([text], name, { type });
+    if (!(navigator.canShare && navigator.canShare({ files: [file] }))) return false;
+    await navigator.share({ files: [file], title: '13번째 밤 저장 파일' });
+    return true;
+  };
+  try {
+    if (await tryShare('application/json') || await tryShare('text/plain')) { S.saveMsg = '📤 저장 파일을 보냈다. 공유 창에서 "파일에 저장"을 고르면 파일 앱에 보관된다.'; return; }
+  } catch (e) { if (e && e.name === 'AbortError') { S.saveMsg = null; return; } }
+  try {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+    const fileName = `13th-night-${S.cycle + 1}-${S.day}.json`;   // 일부 브라우저는 한글 파일명을 버리므로 영문으로
+    a.download = fileName; a.style.display = 'none'; document.body.appendChild(a); a.click();
+    setTimeout(() => { a.remove(); URL.revokeObjectURL(a.href); }, 4000);
+    S.saveMsg = `📤 ${fileName} 파일로 내보냈다.`;
+  } catch (e) { S.saveMsg = '⚠️ 이 환경에서는 파일을 만들 수 없다. 아래 텍스트 백업을 이용하자.'; }
+}
+function stageImport(text) {
+  try {
+    const o = JSON.parse(text);
+    if (!validSave(o)) { S.saveMsg = '⚠️ 13번째 밤 저장 파일이 아니다. 내보내기로 만든 파일을 골라 주세요.'; return; }
+    S.importPreview = migrateSave(o); S.saveConfirm = { kind: 'import' }; S.saveMsg = null;
+  } catch (e) { S.saveMsg = '⚠️ 파일 내용을 읽지 못했다. 내보내기로 만든 .json 파일인지 확인해 주세요.'; }
+}
+
+/* =====================  작은 조각들  ===================== */
+function hpBar(cur, max, cls) { return `<div class="bar ${cls||''}"><i style="width:${pct(cur,max)}%"></i></div>`; }
+function resPills(S) {
+  return `<div class="res-row">
+    <span class="res-pill">⚙️ <span class="res-num">${S.mat}</span></span>
+    <span class="res-pill">👥 <span class="res-num">${S.ref}</span></span>
+  </div>`;
+}
+function techRow(S) {
+  const n = TIER_XP.length;
+  return `<div class="tech-row">${['H','A','M'].map(r=>{
+    const lv = techLevel(S,r);
+    const dots = []; for (let lvi=1; lvi<=n; lvi++) dots.push(`<span class="dot ${lvi<=lv?'on':''}"></span>`);
+    return `<div class="tech-chip"><div>${ROUTES[r].ic} ${ROUTES[r].n}</div>
+      <div class="lvdots">${dots.join('')}</div></div>`;
+  }).join('')}</div>`;
+}
+function vetBadge(u) {
+  const t = veteranTier(u);
+  if (t === 0) return '';
+  return `<span class="vet-badge vet-${t}">${VET_NAME[t]}</span>`;
+}
+function officerBadge(u) { return u.officer ? `<span class="vet-badge officer">🎖️ 장교</span>` : ''; }
+function statLine(u) { return `공격 ${u.atk} · 방어 ${u.def} · 이동 ${u.mov} · 사거리 ${u.rng}`; }
+function sanitizeName(s) { return String(s).replace(/[<>"'&]/g, '').trim().slice(0, 12); }
+function unitLine(u, opts) {
+  opts = opts || {};
+  const rankName = RANKS[u.rt.length>1?'X':u.rt[0]][u.rank];
+  const vt = veteranTier(u);
+  if (opts.sellable && S.renamingUnitId === u.id) {
+    return `<div class="unit-row rename-row">
+      <div class="unit-em ${vt?'vet-'+vt:''}">${u.em}</div>
+      <div class="unit-mid">
+        <input type="text" id="rename-input-${u.id}" class="rename-input" value="${u.name}" maxlength="12" placeholder="${UT[u.type].n}">
+      </div>
+      <div class="btn-row" style="flex-wrap:nowrap">
+        <button class="btn ghost" data-act="cancelRename">취소</button>
+        <button class="btn primary" data-act="confirmRename" data-id="${u.id}">저장</button>
+      </div>
+    </div>`;
+  }
+  const sellBtn = opts.sellable ? `<button class="btn ghost sell-btn" data-act="sellUnit" data-id="${u.id}">판매 ⚙️${unitSellValue(u.type)}</button>` : '';
+  const renameBtn = opts.sellable ? `<button class="btn ghost sell-btn" data-act="renameUnit" data-id="${u.id}">이름</button>` : '';
+  return `<div class="unit-row">
+    <div class="unit-em ${vt?'vet-'+vt:''}">${u.em}${u.badge?`<span class="unit-badge">${u.badge}</span>`:''}</div>
+    <div class="unit-mid">
+      <div class="unit-name">${u.name} <span class="unit-rank">${rankName}</span>${vetBadge(u)}${officerBadge(u)}</div>
+      <div class="unit-stats">${statLine(u)}${u.sk?` · ${u.sk.n}`:''}</div>
+      <div class="unit-stats">치명타 ${Math.round(critChanceOf(u)*100)}% · 방어 확률 ${Math.round(blockChanceOf(u)*100)}%</div>
+      <div class="unit-hpbar">${hpBar(u.hp,u.hpMax)}</div>
+    </div>
+    <div class="unit-btns">${renameBtn}${sellBtn}</div>${opts.extra||''}
+  </div>`;
+}
+
+/* =====================  화면: 인트로  ===================== */
+function renderIntro() {
+  setMode('day');
+  const save = loadGame();
+  if (save && save.gameLocked) {
+    return `<div class="intro-wrap fade-in">
+      <div style="font-size:52px">😇</div>
+      <h1 class="title-lg">13번째 밤</h1>
+      <p>${HIDDEN_ENDING.t} — 당신은 이미 이 이야기의 끝을 보았다.</p>
+      <button class="btn primary" data-act="continueGame">결말 다시 보기</button>
+    </div>`;
+  }
+  return `<div class="intro-wrap fade-in">
+    <div style="font-size:52px">🏚️🔥👿</div>
+    <h1 class="title-lg">13번째 밤</h1>
+    <p>악마가 매일 밤 집을 노린다. 낮에는 사람과 짐승을 거두고 기계를 벼려 힘을 기르고,
+    밤에는 그 힘으로 문 앞을 지켜야 한다. 열세 번째 밤, 지옥의 군주가 온다.</p>
+    ${save ? `<button class="btn primary" data-act="continueGame">이어하기 (${save.day}일째)</button>` : ''}
+    <button class="btn ${save?'ghost':'primary'}" data-act="newGame">${save?'처음부터 새로 시작':'게임 시작'}</button>
+    <button class="btn ghost" data-act="openSaveModal">💾 저장 슬롯 · 파일에서 불러오기</button>
+  </div>`;
+}
+
+/* =====================  화면: 낮  ===================== */
+function renderDay() {
+  setMode('day');
+  ensureDeploySelection(S);
+  const locs = LOCS.map(l => `<button class="loc-card" data-act="scout" data-loc="${l.id}" ${S.outingsLeft<=0?'disabled':''}>
+      <span class="loc-em">${l.em}</span>
+      <span class="loc-name">${l.n}</span>
+      <span class="loc-tag">정찰하러 나간다</span>
+    </button>`).join('');
+
+  const houseRows = HOUSE_ORDER.map(k => {
+    const def = HOUSE[k]; const lv = S.house[k]; const cost = houseUpgradeCost(S, k);
+    return `<div class="unit-row">
+      <div class="unit-em">${def.em}</div>
+      <div class="unit-mid">
+        <div class="unit-name">${def.n} <span class="unit-rank">Lv.${lv}/${def.max}</span></div>
+        <div class="unit-stats">${def.now(lv)}</div>
+      </div>
+      <button class="btn ${cost==null?'ghost':''}" data-act="upgradeHouse" data-key="${k}" ${cost==null||S.mat<cost?'disabled':''}>${cost==null?'최대':`⚙️${cost}`}</button>
+    </div>`;
+  }).join('');
+
+  const trainRows = ['H','A','M'].flatMap(r => MAKE_ORDER[r].map(t => {
+    const ut = UT[t]; const m = ut.make; const unlocked = techLevel(S,r) >= m.tier;
+    const afford = canTrain(S, t);
+    return `<div class="unit-row">
+      <div class="unit-em">${ut.em}</div>
+      <div class="unit-mid">
+        <div class="unit-name">${ut.n}</div>
+        <div class="unit-stats">${unlocked? `필요: ⚙️${m.mat}${m.ref?` 👥${m.ref}`:''}` : `${ROUTES[r].n} 기술 ${m.tier}단계 필요`}</div>
+      </div>
+      <button class="btn" data-act="train" data-type="${t}" ${afford?'':'disabled'}>육성</button>
+    </div>`;
+  })).join('');
+
+  function fuseNeedText(f) {
+    const counts = {};
+    f.from.forEach(t => { const n = UT[t].n; counts[n] = (counts[n]||0)+1; });
+    return Object.entries(counts).map(([n,c]) => c>1 ? `${n} ${c}마리` : n).join(' + ');
+  }
+  const fuseRows = FUSE_STAGES.map(stage => {
+    const rows = stage.types.map(t => {
+      const ut = UT[t]; const f = ut.fuse; const st = fuseStatus(S, t);
+      return `<div class="unit-row">
+        <div class="unit-em">${ut.em}<span class="unit-badge">${ut.badge}</span></div>
+        <div class="unit-mid">
+          <div class="unit-name">${ut.n}</div>
+          <div class="unit-stats">${fuseNeedText(f)} + ⚙️${f.mat}${st.ok? '' : ` · <span style="opacity:.85">${st.reason}</span>`}</div>
+        </div>
+        <button class="btn" data-act="fuse" data-type="${t}" ${st.ok?'':'disabled'}>융합</button>
+      </div>`;
+    }).join('');
+    return `<div class="fuse-stage"><div class="fuse-stage-h">${stage.n}</div>${rows}</div>`;
+  }).join('');
+
+  const roster = S.roster.length ? S.roster.map(u => unitLine(u, {sellable:true})).join('') : `<p class="sub">아직 아무도 없다. 밖에서 사람과 짐승을 거두어 오자.</p>`;
+
+  return `<div class="fade-in">
+    <div class="topbar">
+      <div><h2 class="title-md">${S.day}일째 낮</h2><p class="sub">밤까지 ${S.outingsLeft}번 나갈 수 있다</p></div>
+      ${resPills(S)}
+    </div>
+    <div class="screen" style="padding-top:6px">
+      <div class="card"><div class="bar-label"><span>🏘️ 마을 체력</span><span>${S.houseHp}/${S.houseHpMax}</span></div>${hpBar(S.houseHp,S.houseHpMax,'hp-house')}</div>
+      <button class="card codex-card" style="width:100%; text-align:left; border:1px solid var(--line)" data-act="openCodex">
+        <span style="font-size:20px">📖</span> <b>이야기 도감</b>
+        <span class="sub" style="float:right">${S.codexCount}/${CODEX.length}</span>
+      </button>
+      <button class="card codex-card" style="width:100%; text-align:left; border:1px solid var(--line)" data-act="openSaveModal">
+        <span style="font-size:20px">💾</span> <b>저장 / 불러오기</b>
+        <span class="sub" style="float:right">자동 저장됨</span>
+      </button>
+      ${techRow(S)}
+      <div class="card"><h3>정찰 나가기</h3><div class="grid2">${locs}</div></div>
+      <div class="card"><h3>집 관리</h3>${houseRows}</div>
+      <div class="card"><h3>육성 · 생산</h3>${trainRows}</div>
+      <div class="card"><h3>융합</h3>${fuseRows}</div>
+      <div class="card"><h3>대원 (${S.roster.length}/${ROSTER_MAX})</h3>${roster}</div>
+    <div style="height:8px"></div>
+    </div>
+    <div class="footer-cta">
+      <div class="deploy-hint" data-act="openDeploy">출전 예정 ${S.selectedSquad.length? S.selectedSquad.map(id=>{const u=S.roster.find(r=>r.id===id); return u?u.em:'';}).join(' ') : '없음'} · ${S.selectedSquad.length}/${barracksCap(S)}명 <span class="deploy-edit">변경</span></div>
+      <button class="btn primary full" data-act="openDeploy">🌙 밤을 맞이한다</button>
+    </div>
+  </div>`;
+}
+function renderDeploy() {
+  setMode('day');
+  ensureDeploySelection(S);
+  const cap = barracksCap(S);
+  const rows = S.roster.map(u => {
+    const sel = S.selectedSquad.includes(u.id);
+    const vt = veteranTier(u);
+    const rankName = RANKS[u.rt.length>1?'X':u.rt[0]][u.rank];
+    return `<div class="unit-row deploy-row ${sel?'sel':''}" data-act="toggleDeploy" data-id="${u.id}">
+      <div class="deploy-check">${sel?'✔️':''}</div>
+      <div class="unit-em ${vt?'vet-'+vt:''}">${u.em}${u.badge?`<span class="unit-badge">${u.badge}</span>`:''}</div>
+      <div class="unit-mid">
+        <div class="unit-name">${u.name} <span class="unit-rank">${rankName}</span>${vetBadge(u)}</div>
+        <div class="unit-stats">공격 ${u.atk} · 방어 ${u.def} · 이동 ${u.mov} · 사거리 ${u.rng}${u.sk?` · ${u.sk.n}`:''}</div>
+        <div class="unit-hpbar">${hpBar(u.hp,u.hpMax)}</div>
+      </div>
+    </div>`;
+  }).join('');
+  const n = S.selectedSquad.length;
+  return `<div class="fade-in">
+    <div class="topbar">
+      <div><h2 class="title-md">출전 인원 선택</h2><p class="sub">${n} / ${cap}명 선택됨 · 탭해서 선택·해제</p></div>
+    </div>
+    <div class="screen" style="padding-top:6px">
+      <div class="card">${S.roster.length ? rows : '<p class="sub">대원이 없다. 먼저 낮에 대원을 확보하자.</p>'}</div>
+      <div style="height:8px"></div>
+    </div>
+    <div class="footer-cta" style="display:flex; gap:8px">
+      <button class="btn" style="flex:0 0 auto" data-act="backToDay">돌아가기</button>
+      <button class="btn primary" style="flex:1" data-act="confirmDeploy" ${n<1?'disabled':''}>🌙 이 인원으로 출전</button>
+    </div>
+  </div>`;
+}
+function renderEventModal() {
+  const ce = S.currentEvent, ev = ce.ev;
+  if (!ce.resolved) {
+    const choices = ev.ch.map((c, idx) => `<button class="choice-btn" data-act="choice" data-idx="${idx}" ${affordCost(S,c.cost)?'':'disabled'}>
+        ${c.l}${c.cost? `<div class="choice-cost">비용: ${Object.entries(c.cost).map(([k,v])=>`${k==='mat'?'⚙️':'👥'}${v}`).join(' ')}</div>`:''}
+      </button>`).join('');
+    return `<div class="modal-wrap"><div class="modal fade-in">
+      <div class="em-big">${LOCS.find(l=>l.id===ce.loc).em}</div>
+      <h3 class="title-md">${ev.ti}</h3>
+      <p>${ev.tx}</p>
+      <div class="btn-row" style="flex-direction:column">${choices}</div>
+    </div></div>`;
+  }
+  return `<div class="modal-wrap"><div class="modal fade-in">
+    <div class="em-big">${LOCS.find(l=>l.id===ce.loc).em}</div>
+    <div class="result-msg">${ce.msg}</div>
+    <div class="gain-row">${(ce.gains||[]).map(g=>`<span class="gain-chip">${g.ic} ${g.txt}</span>`).join('')}</div>
+    <button class="btn primary" data-act="closeEvent">닫기</button>
+  </div></div>`;
+}
+function renderCodexModal() {
+  const entries = CODEX.map((c, idx) => {
+    if (idx < S.codexCount) {
+      return `<div class="codex-entry ${idx===S.lastCodexUnlock?'new':''}">
+        <div class="codex-num">${idx+1}</div>
+        <div><div class="codex-title">${c.t}</div><p class="codex-body">${c.b}</p></div>
+      </div>`;
+    }
+    return `<div class="codex-entry locked">
+      <div class="codex-num">${idx+1}</div>
+      <div><div class="codex-title">🔒 ???</div></div>
+    </div>`;
+  }).join('');
+  return `<div class="modal-wrap"><div class="modal fade-in" style="max-height:92vh">
+    <h3 class="title-md">📖 이야기 도감 <span class="sub">${S.codexCount}/${CODEX.length}</span></h3>
+    <p class="sub">대악마를 처치할 때마다 한 편씩 해금된다.</p>
+    <div style="overflow:auto">${entries}</div>
+    <button class="btn primary" data-act="closeCodex">닫기</button>
+  </div></div>`;
+}
+
+function renderSaveModal() {
+  const canSave = canSaveNow();
+  const conf = S.saveConfirm;
+  const slotCards = SLOTS.map(sl => {
+    const o = readSave(sl.key);
+    const sm = o ? saveSummary(o) : null;
+    let actions;
+    if (conf && conf.key === sl.key) {
+      const q = conf.kind === 'save' ? `${sl.label}의 기록을 지금 진행 상황으로 바꿀까?`
+              : conf.kind === 'load' ? '지금 하던 게임 대신 이 기록을 불러올까? 저장하지 않은 진행은 사라진다.'
+              : `${sl.label}의 기록을 지울까? 되돌릴 수 없다.`;
+      const okLabel = conf.kind === 'save' ? '덮어쓰기' : conf.kind === 'load' ? '불러오기' : '지우기';
+      actions = `<div class="slot-confirm"><div class="slot-q">${q}</div>
+        <div class="btn-row"><button class="btn ghost" data-act="slotCancel">취소</button><button class="btn primary" style="margin-left:auto" data-act="slotDo">${okLabel}</button></div></div>`;
+    } else {
+      const b = [];
+      if (!sl.auto && canSave) b.push(`<button class="btn ${o ? '' : 'primary'}" data-act="slotAsk" data-kind="save" data-key="${sl.key}">${o ? '덮어쓰기' : '여기에 저장'}</button>`);
+      if (o) b.push(`<button class="btn primary" data-act="slotAsk" data-kind="load" data-key="${sl.key}">불러오기</button>`);
+      if (o && !sl.auto) b.push(`<button class="btn ghost" data-act="slotAsk" data-kind="delete" data-key="${sl.key}">지우기</button>`);
+      actions = b.length ? `<div class="btn-row">${b.join('')}</div>` : '';
+    }
+    const body = sm
+      ? `<div class="slot-title">${sm.title} <span class="sub">${sm.when}</span></div><div class="sub">${sm.detail}</div>`
+      : `<div class="sub">${sl.auto ? '아직 자동 저장된 기록이 없다. 낮 화면에서 알아서 저장된다.' : (canSave ? '비어 있다. 지금 진행 상황을 여기에 남길 수 있다.' : '비어 있다.')}</div>`;
+    return `<div class="slot-card ${o ? '' : 'empty'} ${sl.auto ? 'auto' : ''}">
+      <div class="slot-mark">${sl.mark}</div>
+      <div class="slot-body"><div class="slot-label">${sl.label}</div>${body}${actions}</div>
+    </div>`;
+  }).join('');
+
+  let importBox = '';
+  if (conf && conf.kind === 'import' && S.importPreview) {
+    const sm = saveSummary(S.importPreview);
+    importBox = `<div class="slot-confirm"><div class="slot-q">이 기록을 불러올까? <b>${sm.title}</b><br><span class="sub">${sm.detail}</span></div>
+      <div class="btn-row"><button class="btn ghost" data-act="slotCancel">취소</button><button class="btn primary" style="margin-left:auto" data-act="slotDo">불러오기</button></div></div>`;
+  }
+  const backup = IN_FRAME
+    ? `<div class="save-section">
+        <h4>텍스트 백업</h4>
+        <p class="sub">이 화면에서는 파일을 만들 수 없어서 텍스트로 옮긴다. 설치형 앱에서는 파일로 주고받을 수 있다.</p>
+        ${canSave ? `<textarea class="save-textarea" readonly>${serializeState(S)}</textarea><button class="btn full" data-act="copyExport">텍스트 복사</button>` : ''}
+        <textarea class="save-textarea" id="import-textarea" placeholder="백업해 둔 텍스트를 여기에 붙여넣기"></textarea>
+        <button class="btn full" data-act="doImport">붙여넣은 텍스트 불러오기</button>
+        ${importBox}
+      </div>`
+    : `<div class="save-section">
+        <h4>파일 백업</h4>
+        <p class="sub">저장 파일을 아이폰 '파일' 앱이나 iCloud Drive에 넣어 두면, 앱을 지웠다 다시 설치하거나 기기를 바꿔도 이어서 할 수 있다.</p>
+        <div class="btn-row">
+          ${canSave ? `<button class="btn" data-act="exportFile">📤 파일로 내보내기</button>` : ''}
+          <button class="btn" data-act="pickFile">📥 파일에서 불러오기</button>
+        </div>
+        <input type="file" id="import-file" accept=".json,application/json,text/plain" style="display:none">
+        ${importBox}
+      </div>`;
+
+  return `<div class="modal-wrap"><div class="modal ${saveModalWasOpen ? '' : 'fade-in'}" style="max-height:92vh">
+    <h3 class="title-md">💾 저장 / 불러오기</h3>
+    ${S.saveMsg ? `<div class="result-msg">${S.saveMsg}</div>` : ''}
+    <div class="slot-list">${slotCards}</div>
+    ${backup}
+    <button class="btn" data-act="closeSaveModal">닫기</button>
+  </div></div>`;
+}
+
+/* =====================  화면: 밤 인트로  ===================== */
+function renderNightIntro() {
+  setMode('night');
+  const bossKey = S.night && S.night.bossKey;
+  return `<div class="intro-wrap fade-in">
+    <div class="night-num">${S.day}</div>
+    <h1 class="title-lg">${S.day}번째 밤</h1>
+    <p>${INTRO[S.day]}</p>
+    ${bossKey ? `<p class="sub">⚠️ 대악마가 나타난다: ${ET[bossKey].n}</p>` : ''}
+    ${S.night && S.night.map.pickups.length ? `<p class="sub">🎁 전장 곳곳에 보급품 ${S.night.map.pickups.length}개 — 대원을 그 칸으로 옮겨 회수하자</p>` : ''}
+    <button class="btn primary" data-act="beginCombat">전투 시작</button>
+  </div>`;
+}
+
+/* =====================  화면: 밤 전투  ===================== */
+function selUnit() { return S.night ? S.night.deployed.find(u => u.id === S.night.selectedId) : null; }
+function pickupIcon(p) { return p.kind === 'rescue' ? UT[p.unit].em : PICKUPS[p.kind].em; }
+function pickupReward(p) {
+  if (p.kind === 'crate') return `⚙️ 자재 +${p.amt}`;
+  if (p.kind === 'survivor') return `👥 난민 +${p.amt}`;
+  if (p.kind === 'intel') return `${ROUTES[p.route].ic} ${ROUTES[p.route].n} 경험치 +${p.amt}`;
+  return `${UT[p.unit].em} ${UT[p.unit].n} 합류`;
+}
+/* 지형·마을·보급품·적을 탭했을 때 보여 줄 설명 */
+function tileInfo(x, y) {
+  if (isVillage(x, y)) return `🏘️ 마을 — 체력 ${S.houseHp}/${S.houseHpMax}, 0이 되면 패배${S.house.tower ? ` · 🔭 망루가 ${TOWER_RNG}칸 안의 악마를 쏜다` : ''}`;
+  const occ = occupant(S, x, y);
+  if (occ && !isPlayerType(occ.type)) return `${occ.em} ${occ.name} — 체력 ${occ.hp}/${occ.hpMax} · 공격 ${occ.atk} · 이동 ${occ.mov} · 사거리 ${occ.rng}${occ.fly ? ' · 비행' : ''}`;
+  const ter = terrainAt(S, x, y);
+  if (ter) return `${TERRAIN[ter].em || '≈'} ${TERRAIN[ter].n} — ${TERRAIN[ter].d}`;
+  if (isBarricade(S, x, y)) return '🧱 방벽 — 지상 악마의 진입을 막는다 · 비행 유닛은 넘어간다';
+  const p = pickupAt(S, x, y);
+  if (p) return `${pickupIcon(p)} ${pickupName(p)} (${pickupReward(p)}) — ${PICKUPS[p.kind].d}`;
+  return null;
+}
+function renderNight() {
+  setMode('night');
+  const N = S.night;
+  const boss = N.enemies.find(e => e.boss && e.alive);
+  const u = selUnit();
+  const reach = (u && !u.moved && N.mode==='idle') ? reachableTiles(S, u) : new Map();
+  const skTargets = (u && N.mode==='skill') ? skillTargets(S, u) : [];
+  const basicHit = (u && !u.acted && N.mode==='idle') ? N.enemies.filter(e=>e.alive && dist(u,e)<=u.rng) : [];
+  const aoePreview = (u && N.mode==='confirm' && N.pendingSkill) ? skillAoeTiles(S, u, N.pendingSkill.targetId) : [];
+  const vHit = N.villageHitTurn === N.turn - 1;
+
+  let tiles = `<div class="village${vHit?' hit-flash':''}" data-act="tile" data-x="${VILLAGE.x}" data-y="${VILLAGE.y}"
+      style="grid-column:${VILLAGE.x+1} / span ${VILLAGE.w};grid-row:${VILLAGE.y+1} / span ${VILLAGE.h}">
+      <span class="v-em">🏘️</span>${S.house.tower?'<span class="v-tower">🔭</span>':''}
+      <span class="v-hp"><i style="width:${pct(S.houseHp,S.houseHpMax)}%"></i></span>
+    </div>`;
+  for (let y = 0; y < GH; y++) {
+    for (let x = 0; x < GW; x++) {
+      if (isVillage(x, y)) continue;
+      const k = key(x, y);
+      const occ = occupant(S, x, y);
+      const ter = terrainAt(S, x, y);
+      const wall = isBarricade(S, x, y);
+      const p = pickupAt(S, x, y);
+      let cls = 'tile';
+      if (ter) cls += ' t-' + ter;
+      if (wall) cls += ' wall';
+      if (p && !occ) cls += ' pickup';
+      if (reach.has(k)) cls += ' reach';
+      if (u && u.x===x && u.y===y) cls += ' sel';
+      if (basicHit.find(e=>e.x===x&&e.y===y) || skTargets.find(t=>t.x===x&&t.y===y)) cls += ' hit';
+      if (aoePreview.some(([px,py])=>px===x&&py===y)) cls += ' aoe';
+      let inner = '';
+      if (occ) {
+        inner = `${occ.boss?'<span class="boss-mark">👑</span>':''}${occ.badge?`<span class="unit-badge">${occ.badge}</span>`:''}${occ.em}
+          <span class="mini-hp"><i style="width:${pct(occ.hp,occ.hpMax)}%;background:${isPlayerType(occ.type)?'var(--good)':'var(--accent)'}"></i></span>`;
+      } else if (p) {
+        inner = `<span class="pk">${pickupIcon(p)}</span>${p.kind==='rescue'?'<span class="sos">🆘</span>':''}`;
+      } else if (ter) {
+        inner = ter === 'water' ? '<span class="wave">≈</span>' : `<span class="ter">${TERRAIN[ter].em}</span>`;
+      } else if (wall) {
+        inner = '<span class="ter">🧱</span>';
+      }
+      tiles += `<div class="${cls}" data-act="tile" data-x="${x}" data-y="${y}" style="grid-column:${x+1};grid-row:${y+1}">${inner}</div>`;
+    }
+  }
+
+  const tray = N.deployed.map(d => {
+    let cls = 'tray-chip'; if (!d.alive) cls += ' dead'; else if (d.moved && d.acted) cls += ' acted'; if (d.id===N.selectedId) cls += ' active';
+    const vt = veteranTier(d); if (vt) cls += ' vet-'+vt;
+    return `<div class="${cls}" data-act="tile" data-x="${d.x}" data-y="${d.y}">
+      ${d.em}<div class="tray-hp"><i style="width:${pct(d.hp,d.hpMax)}%"></i></div>
+    </div>`;
+  }).join('');
+
+  const won = N.over === 'victory';
+  const endLabel = won ? '밤 마치기 ▶' : '턴 종료 ▶';
+  let actionBar = `<div class="btn-row"><button class="btn primary full" data-act="endTurn">${endLabel}</button></div>`;
+  if (N.mode === 'confirm' && u) {
+    const sk = u.sk;
+    actionBar = `<div class="skill-confirm">
+      <div class="sc-title">⚠️ 스킬을 사용합니다 — <b>${sk.n}</b></div>
+      <div class="sc-desc">${sk.d}</div>
+      <div class="btn-row">
+        <button class="btn" data-act="cancelSkill">취소</button>
+        <button class="btn primary" style="margin-left:auto" data-act="confirmSkill">확인</button>
+      </div>
+    </div>`;
+  } else if (u && u.alive) {
+    const skReady = u.sk && !u.acted && u.cdLeft===0 && !won && !(u.sk.once && u.onceUsed);
+    actionBar = `<div class="sel-info"><span class="em">${u.em}</span><b>${u.name}</b>${vetBadge(u)}${officerBadge(u)} ${u.hp}/${u.hpMax}
+        ${u.sk?`<span class="cd-chip">${u.sk.n}${u.cdLeft>0?` (${u.cdLeft})`:(u.sk.once&&u.onceUsed?' (사용함)':'')}</span>`:''}
+      </div>
+      <div class="sel-stats">${statLine(u)}</div>
+      <div class="btn-row">
+        <button class="btn" data-act="armSkill" ${skReady?'':'disabled'}>${N.mode==='skill'?'스킬 대상 선택 중…':'스킬 사용'}</button>
+        <button class="btn ghost" data-act="deselect">선택 해제</button>
+        <button class="btn primary" style="margin-left:auto" data-act="endTurn">${endLabel}</button>
+      </div>`;
+  }
+
+  const left = pickupsLeft(S);
+  const logText = won ? '✨ 모든 악마를 물리쳤다! 남은 보급품을 챙기고 밤을 마치자' : (N.hint || S.log[0] || '');
+  const tileSize = `clamp(30px, calc((min(100vw, 480px) - ${28 + (GW-1)*3}px) / ${GW}), 44px)`;
+  return `<div class="fade-in">
+    <div class="topbar night-top">
+      <div style="width:100%">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <h2 class="title-md">${S.day}번째 밤</h2>
+          <span class="turn-chip">턴 ${N.turn}/${TURN_LIMIT}</span>
+        </div>
+        <div class="bar-label"><span>🏘️ 마을 체력</span><span>${S.houseHp}/${S.houseHpMax}</span></div>
+        ${hpBar(S.houseHp, S.houseHpMax, 'hp-house')}
+        ${boss ? `<div class="bar-label" style="margin-top:4px"><span>${boss.em} ${boss.name}${boss.enraged?' 🔥':''}</span><span>${boss.hp}/${boss.hpMax}</span></div>${hpBar(boss.hp,boss.hpMax,'hp-house')}` : ''}
+      </div>
+    </div>
+    <div class="screen" style="gap:8px;padding-top:8px">
+      <div class="log-line ${won?'won':''} ${N.hint&&!won?'hint':''}">${logText}</div>
+      <div class="board-wrap"><div class="board" style="--tile:${tileSize};grid-template-columns:repeat(${GW},var(--tile));grid-template-rows:repeat(${GH},var(--tile))">${tiles}</div></div>
+      <div class="board-note">${left ? `🎁 남은 보급품 ${left}개 · 밤이 끝나면 사라진다 · ` : ''}🌲🪨≈ 지상 통과 불가 · 칸을 탭하면 설명</div>
+      <div class="unit-tray">${tray}</div>
+    </div>
+    <div class="action-bar">${actionBar}</div>
+  </div>`;
+}
+
+/* =====================  화면: 결과 / 게임오버 / 엔딩  ===================== */
+function renderResult() {
+  const r = S.lastResult;
+  setMode(r.win ? 'day' : 'night');
+  const nextLabel = r.win ? (S.day>=FINAL_NIGHT ? '결말 보기' : '다음 날 준비') : null;
+  const unlock = S.lastCodexUnlock;
+  return `<div class="result-wrap fade-in">
+    <div class="result-em">${r.win?'🌅':'💥'}</div>
+    <h1 class="title-lg">${r.win?`${r.day}번째 밤을 버텨냈다`:'집이 무너졌다'}</h1>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-num">${S.stats.kills}</div><div class="stat-lbl">총 처치</div></div>
+      <div class="stat-box"><div class="stat-num">${S.roster.filter(u=>u.alive).length}</div><div class="stat-lbl">생존 대원</div></div>
+      <div class="stat-box"><div class="stat-num">${powerScore(S)}</div><div class="stat-lbl">전투력</div></div>
+    </div>
+    ${r.win && r.loot && r.loot.length ? `<div class="loot-box"><div class="sub">전장에서 회수한 것</div><div class="gain-row" style="justify-content:center">${r.loot.map(g=>`<span class="gain-chip">${g.ic} ${g.txt}</span>`).join('')}</div></div>` : ''}
+    ${r.win && r.missed ? `<p class="sub">놓친 보급품 ${r.missed}개</p>` : ''}
+    ${unlock!=null ? `<button class="card codex-unlock-card" data-act="openCodex">🔓 새로운 이야기 해금 — <b>${CODEX[unlock].t}</b><span class="sub" style="display:block">탭해서 읽기</span></button>` : ''}
+    ${r.win ? `<button class="btn primary full" data-act="proceed">${nextLabel}</button>`
+            : `<div class="btn-row" style="width:100%;flex-direction:column">
+                 <button class="btn primary full" data-act="retryNight">이 밤 다시 도전</button>
+                 <button class="btn full" data-act="newGame">처음부터 다시</button>
+               </div>`}
+  </div>`;
+}
+function renderEnding() {
+  setMode('day');
+  if (S.gameLocked) {
+    return `<div class="result-wrap fade-in">
+      <div class="result-em">😇</div>
+      <h1 class="title-lg">${HIDDEN_ENDING.t}</h1>
+      <p>${HIDDEN_ENDING.b}</p>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="stat-num">${S.stats.kills}</div><div class="stat-lbl">총 처치</div></div>
+        <div class="stat-box"><div class="stat-num">${S.cycle+1}</div><div class="stat-lbl">회차</div></div>
+        <div class="stat-box"><div class="stat-num">${powerScore(S)}</div><div class="stat-lbl">전투력</div></div>
+      </div>
+      <p class="sub">이야기는 여기서 완전히 끝난다. 더 이상 이어지지 않는다.</p>
+    </div>`;
+  }
+  const boss = FINALS[S.finalIdx];
+  return `<div class="result-wrap fade-in">
+    <div class="result-em">${ET[boss].em}</div>
+    <h1 class="title-lg">${eul(ET[boss].n)} 물리쳤다</h1>
+    <p>${ENDINGS[S.finalIdx]}</p>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-num">${S.stats.kills}</div><div class="stat-lbl">총 처치</div></div>
+      <div class="stat-box"><div class="stat-num">${S.cycle+1}</div><div class="stat-lbl">회차</div></div>
+      <div class="stat-box"><div class="stat-num">${powerScore(S)}</div><div class="stat-lbl">전투력</div></div>
+    </div>
+    <div class="btn-row" style="width:100%;flex-direction:column">
+      <button class="btn primary full" data-act="newCycle">새 회차로 계속하기</button>
+      <button class="btn full" data-act="newGame">처음부터 다시</button>
+    </div>
+  </div>`;
+}
+
+/* =====================  렌더 디스패치  ===================== */
+function render() {
+  let html;
+  switch (S.phase) {
+    case 'intro': html = renderIntro(); break;
+    case 'day': html = renderDay() + (S.currentEvent ? renderEventModal() : ''); break;
+    case 'deploy': html = renderDeploy(); break;
+    case 'nightIntro': html = renderNightIntro(); break;
+    case 'night': html = renderNight(); break;
+    case 'result': html = renderResult(); break;
+    case 'ending': html = renderEnding(); break;
+    default: html = renderIntro();
+  }
+  if (S.codexOpen) html += renderCodexModal();
+  if (S.saveModalOpen) html += renderSaveModal();
+  saveModalWasOpen = !!S.saveModalOpen;
+  $app().innerHTML = html;
+  if (S.phase === 'day' || S.phase === 'deploy' || (S.phase === 'ending' && S.gameLocked)) saveGame(S);
+}
+
+/* =====================  입력 처리  ===================== */
+document.addEventListener('DOMContentLoaded', () => {
+  $app().addEventListener('change', (e) => {
+    if (e.target && e.target.id === 'import-file' && e.target.files && e.target.files[0]) {
+      e.target.files[0].text().then(txt => { stageImport(txt); render(); }).catch(() => { S.saveMsg = '⚠️ 파일을 열지 못했다.'; render(); });
+    }
+  });
+  $app().addEventListener('click', (e) => {
+    const t = e.target.closest('[data-act]');
+    if (!t) return;
+    const act = t.dataset.act;
+    if (S.night && act !== 'tile') S.night.hint = null;
+    if (act === 'newGame') { clearSave(); S = newGame(); S.phase='day'; newDay(S); S.mat=8; S.ref=2; S.roster.push(makeUnit(S,'rifle',0)); S.roster.push(makeUnit(S,'wolf',0)); }
+    else if (act === 'continueGame') { const save = loadGame(); if (save) S = save; }
+    else if (act === 'scout') { if (S.outingsLeft>0){ S.outingsLeft--; S.currentEvent = { loc:t.dataset.loc, ev: rollEvent(S,t.dataset.loc), resolved:false }; } }
+    else if (act === 'choice') { const ce=S.currentEvent; const ch=ce.ev.ch[+t.dataset.idx]; if(affordCost(S,ch.cost)){ const r=resolveChoice(S,ch); ce.msg=r.msg; ce.gains=r.gains; ce.resolved=true; } }
+    else if (act === 'closeEvent') { S.currentEvent = null; }
+    else if (act === 'openCodex') { S.codexOpen = true; }
+    else if (act === 'closeCodex') { S.codexOpen = false; }
+    else if (act === 'openSaveModal') { S.saveModalOpen = true; S.saveMsg = null; S.saveConfirm = null; S.importPreview = null; }
+    else if (act === 'closeSaveModal') { S.saveModalOpen = false; S.saveMsg = null; S.saveConfirm = null; S.importPreview = null; }
+    else if (act === 'slotCancel') { S.saveConfirm = null; S.importPreview = null; }
+    else if (act === 'slotAsk') {
+      const k = t.dataset.key, kind = t.dataset.kind, exists = !!readSave(k);
+      S.saveMsg = null; S.importPreview = null;
+      if (kind === 'save' && !exists) { S.saveMsg = writeSave(k, S) ? `✅ ${SLOTS.find(x => x.key === k).label}에 저장했다.` : '⚠️ 저장 공간이 부족하거나 저장이 막혀 있다.'; S.saveConfirm = null; }
+      else if (kind === 'load' && S.phase === 'intro') { const o = readSave(k); if (o) { S = o; } }
+      else S.saveConfirm = { key: k, kind };
+    }
+    else if (act === 'slotDo') {
+      const c = S.saveConfirm; S.saveConfirm = null;
+      if (c && c.kind === 'save') S.saveMsg = writeSave(c.key, S) ? `✅ ${SLOTS.find(x => x.key === c.key).label}에 저장했다.` : '⚠️ 저장 공간이 부족하거나 저장이 막혀 있다.';
+      else if (c && c.kind === 'delete') { removeSave(c.key); S.saveMsg = `🗑️ ${SLOTS.find(x => x.key === c.key).label}을(를) 지웠다.`; }
+      else if (c && c.kind === 'load') { const o = readSave(c.key); if (o) { S = o; } else S.saveMsg = '⚠️ 기록을 읽지 못했다.'; }
+      else if (c && c.kind === 'import' && S.importPreview) { const o = S.importPreview; S = o; saveGame(S); }
+    }
+    else if (act === 'exportFile') { exportSaveFile().then(render); }
+    else if (act === 'pickFile') { const inp = document.getElementById('import-file'); if (inp) { inp.value = ''; inp.click(); } }
+    else if (act === 'copyExport') {
+      const text = serializeState(S);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+          .then(() => { S.saveMsg = '📋 복사했다. 메모 앱 같은 곳에 붙여넣어 보관하자.'; render(); })
+          .catch(() => { S.saveMsg = '복사가 막혀 있다. 위 텍스트 상자를 길게 눌러 전체 선택 후 복사하자.'; render(); });
+      } else S.saveMsg = '복사가 막혀 있다. 위 텍스트 상자를 길게 눌러 전체 선택 후 복사하자.';
+    }
+    else if (act === 'doImport') {
+      const ta = document.getElementById('import-textarea');
+      if (!ta || !ta.value.trim()) S.saveMsg = '먼저 백업 텍스트를 붙여넣어 주세요.';
+      else stageImport(ta.value);
+    }
+    else if (act === 'upgradeHouse') { upgradeHouse(S, t.dataset.key); }
+    else if (act === 'train') { trainUnit(S, t.dataset.type); }
+    else if (act === 'fuse') { fuseUnit(S, t.dataset.type); }
+    else if (act === 'sellUnit') { sellUnit(S, +t.dataset.id); }
+    else if (act === 'renameUnit') { S.renamingUnitId = +t.dataset.id; }
+    else if (act === 'cancelRename') { S.renamingUnitId = null; }
+    else if (act === 'confirmRename') {
+      const id = +t.dataset.id;
+      const input = document.getElementById('rename-input-' + id);
+      const u = S.roster.find(r => r.id === id);
+      if (u && input) { const val = sanitizeName(input.value); if (val) u.name = val; }
+      S.renamingUnitId = null;
+    }
+    else if (act === 'openDeploy') { S.phase = 'deploy'; ensureDeploySelection(S); }
+    else if (act === 'toggleDeploy') { toggleDeploy(S, +t.dataset.id); }
+    else if (act === 'backToDay') { S.phase = 'day'; }
+    else if (act === 'confirmDeploy') { startNight(S); }
+    else if (act === 'beginCombat') { beginCombat(S); }
+    else if (act === 'tile') {
+      const x = +t.dataset.x, y = +t.dataset.y;
+      onTileTap(x, y);
+    }
+    else if (act === 'armSkill') {
+      const u = selUnit();
+      if (u && u.sk) {
+        if (['cleave','buff','judgment','multiply'].includes(u.sk.k)) { S.night.mode='confirm'; S.night.pendingSkill={targetId:null}; }
+        else { S.night.mode='skill'; }
+      }
+    }
+    else if (act === 'confirmSkill') {
+      const u = selUnit();
+      if (u && S.night.pendingSkill) trySkill(S, u.id, S.night.pendingSkill.targetId);
+      S.night.mode='idle'; S.night.pendingSkill=null;
+    }
+    else if (act === 'cancelSkill') { S.night.mode='idle'; S.night.pendingSkill=null; }
+    else if (act === 'deselect') { S.night.selectedId=null; S.night.mode='idle'; }
+    else if (act === 'endTurn') { endPlayerTurn(S); }
+    else if (act === 'proceed') { proceedFromResult(S); }
+    else if (act === 'retryNight') { retryNight(S); beginCombat(S); }
+    else if (act === 'newCycle') { startNewCycle(S); }
+    render();
+  });
+  render();
+});
+
+function onTileTap(x, y) {
+  const N = S.night; if (!N) return;
+  N.hint = null;
+  const occ = occupant(S, x, y);
+  if (N.mode === 'skill') {
+    const u = selUnit(); if (!u) { N.mode='idle'; return; }
+    const targets = skillTargets(S, u);
+    const t = targets.find(tt => tt.x===x && tt.y===y);
+    if (t) { N.mode = 'confirm'; N.pendingSkill = { targetId: t.id }; }
+    else { N.mode = 'idle'; }
+    return;
+  }
+  if (N.mode === 'confirm') return; // 확인/취소 버튼으로만 진행
+  // idle 모드
+  if (occ && isPlayerType(occ.type) && occ.alive) {
+    if (N.selectedId === occ.id) { N.selectedId = null; return; }
+    N.selectedId = occ.id; N.mode = 'idle'; return;
+  }
+  const u = selUnit();
+  if (occ && !isPlayerType(occ.type)) { // 적 — 닿으면 공격, 아니면 정보
+    if (u && !u.acted && N.over !== 'victory' && dist(u, occ) <= u.rng) tryAttack(S, u.id, occ.id);
+    else N.hint = tileInfo(x, y);
+    return;
+  }
+  // 빈 칸 (보급품 칸 포함) — 이동할 수 있으면 이동, 아니면 설명
+  if (u && !u.moved && reachableTiles(S, u).has(key(x, y))) { tryMove(S, u.id, x, y); return; }
+  const info = tileInfo(x, y);
+  if (info) { N.hint = info; return; }
+  if (u) N.selectedId = null;
+}
+
+</script>
+<script>
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+}
+</script>
+</body>
+</html>
