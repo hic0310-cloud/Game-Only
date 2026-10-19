@@ -6470,6 +6470,49 @@ function xpBlock(u) {   // 낮에는 늘 가득 찬 체력 대신, 다음 계급
   return `<div class="xp-line"><span>${nxt == null ? '최고 계급' : `다음 계급까지 경험치 ${nxt - u.xp}`}</span><span>전공 ${merit}/${FEAT_CAP}</span></div><div class="bar xp-bar"><i style="width:${p}%"></i></div>`;
 }
 const vsCache = { key: null, url: null, pending: null };
+/* 3차 융합 유닛의 낮 풍경 그림 (수채 + 갈색 잉크 선) */
+const VS3ART = (() => {
+  const INK = 'stroke="#5A3A28" stroke-width=".6" stroke-opacity=".55" stroke-linejoin="round" stroke-linecap="round"';
+  const ink = w => `stroke="#5A3A28" stroke-width="${w}" stroke-opacity=".55" stroke-linejoin="round" stroke-linecap="round"`;
+  const sh = (x, y, len, h) => `<ellipse cx="${x}" cy="${y}" rx="${len / 2}" ry="${h || 1.8}" fill="#3A2418" opacity=".22"/>`;
+  const glow = (x, y, r, c, a) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" opacity="${a}" filter="url(#vBleed)"/>`;
+  const apex = (x, by, k) => `<g transform="translate(${x} ${by}) scale(${k})">${sh(6, 0, 30, 2.2)}
+    <rect x="-8" y="-15" width="6" height="15" fill="#2E4670" ${INK}/><rect x="2" y="-15" width="6" height="15" fill="#3A5684" ${INK}/>
+    <rect x="-9.5" y="-2.4" width="8" height="2.6" fill="#24375A" ${INK}/><rect x="1" y="-2.4" width="8" height="2.6" fill="#24375A" ${INK}/>
+    <path d="M-12 -33 L12 -33 L10 -15 L-10 -15 Z" fill="#4A6A9E" ${INK}/><path d="M-12 -33 L-3 -33 L-4 -15 L-10 -15 Z" fill="#8FB0D8" opacity=".45"/>
+    <rect x="-17" y="-35" width="7" height="8" rx="1.5" fill="#4A6A9E" ${INK}/><rect x="10" y="-35" width="7" height="8" rx="1.5" fill="#3A5684" ${INK}/>
+    <rect x="-17" y="-28" width="5" height="14" fill="#3A5684" ${INK}/><rect x="12" y="-28" width="5" height="14" fill="#2E4670" ${INK}/><rect x="13" y="-14" width="3" height="14" fill="#8A8E96" ${INK}/>
+    <rect x="-4.5" y="-41" width="9" height="7" rx="1.2" fill="#4A6A9E" ${INK}/><path d="M-3 -38 h6" stroke="#9EF0F8" stroke-width="1.2"/>
+    ${glow(0, -25, 7, '#9EF0F8', .45)}<circle cx="0" cy="-25" r="2.8" fill="#C8FAFF" ${ink(.4)}/></g>`;
+  const ark = (x, y, k) => `<g transform="translate(${x} ${y}) scale(${k})"><path d="M-10 6 L-24 40 L24 40 L10 6 Z" fill="#BFF4FF" opacity=".1"/>
+    <ellipse cx="0" cy="0" rx="20" ry="5.6" fill="#F6F2EA" ${INK}/><path d="M-20 0 Q0 9 20 0 Q0 4 -20 0 Z" fill="#C8C4BE" opacity=".8"/>
+    <path d="M-8 -5 Q0 -12 9 -5 Z" fill="#E8F6FA" ${INK}/><path d="M-5 -6.6 Q0 -10 5 -6.6" fill="none" stroke="#9AD8E8" stroke-width="1"/>
+    <rect x="-13" y="-2" width="2" height="5.6" fill="#C8403A"/><rect x="-14.8" y="-.2" width="5.6" height="2" fill="#C8403A"/>
+    ${glow(0, 6, 8, '#9EF0F8', .5)}<ellipse cx="-11" cy="5.4" rx="3" ry="1" fill="#C8FAFF"/><ellipse cx="11" cy="5.4" rx="3" ry="1" fill="#C8FAFF"/></g>`;
+  const jet = (x, y, k) => `<g transform="translate(${x} ${y}) scale(${k})">
+    <path d="M-12 0 L-6 -1.8 L8 -1.6 L12 0 L8 1.6 L-6 1.8 Z" fill="#3A3E4A" ${INK}/><path d="M-2 -1.4 L5 -8 L8 -8 L4 -1.4 Z" fill="#2C303A" ${INK}/><path d="M-2 1.4 L4 6.6 L7 6.6 L4 1.4 Z" fill="#2C303A" ${INK}/>
+    <path d="M7 -1.4 L10 -5 L11.6 -5 L10.4 -.8 Z" fill="#2C303A"/><path d="M-9 -.6 L-5 -1.2" stroke="#9ADCF0" stroke-width=".9"/></g>`;
+  const wraith = (x, y, k) => `<g transform="translate(${x} ${y}) scale(${k})">${glow(0, -4, 8, '#7AE8D8', .32)}
+    <path d="M-4.6 0 Q-5.6 -6 -3 -9.6 Q0 -12 3 -9.6 Q4.6 -6 4.2 0 L2 -1.4 L0 .4 L-2 -1.4 Z" fill="#2E5A5A" ${INK}/>
+    <path d="M-3 -9.6 Q0 -12.6 3 -9.6 L2.4 -6.6 L-2.4 -6.6 Z" fill="#1E3E40"/><circle cx="1.2" cy="-8" r=".7" fill="#C8FFF4"/>
+    <path d="M1 -4.6 L13 -6.6" stroke="#4A4E56" stroke-width="1.2"/><path d="M8 -6 L9 -4" stroke="#4A4E56" stroke-width=".8"/>
+    <path d="M-4.6 0 Q-6 3 -4 5 M0 .4 Q0 4 1.4 6" fill="none" stroke="#7AE8D8" stroke-width=".7" opacity=".6"/></g>`;
+  return {
+    back(o, fx, h, snow) {   // 들판 뒤쪽: 계류탑과 방주 · 정비 비계와 수호자 · 활주로와 섬멸자
+      if (h.ark) { o.push(`${sh(26, 108, 16, 1.4)}<g stroke="#6A4A30" stroke-width="1.4"><line x1="20" y1="108" x2="24" y2="62"/><line x1="32" y1="108" x2="28" y2="62"/></g><g stroke="#7A5434" stroke-width=".8"><line x1="21" y1="96" x2="31" y2="86"/><line x1="31" y1="96" x2="21" y2="86"/><line x1="22" y1="82" x2="30" y2="72"/><line x1="30" y1="82" x2="22" y2="72"/></g><rect x="21" y="59" width="10" height="4" fill="#8A6440" ${INK}/>${snow ? '<rect x="21" y="58.4" width="10" height="1.4" fill="#FFFDF8"/>' : ''}`);
+        o.push(`<path d="M30 60 Q40 52 48 46" fill="none" stroke="#6A4A30" stroke-width=".6"/>` + ark(62, 42, .85)); }
+      if (h.ann) { o.push(`<path d="M232 112 L318 108 L322 112 L236 116 Z" fill="${snow ? '#C8BCB4' : '#B4986A'}" opacity=".75"/>${[0, 1, 2, 3, 4, 5].map(q => `<path d="M${242 + q * 13} ${113 - q * .6} h6" stroke="#FFF6E0" stroke-width=".8" opacity=".7"/>`).join('')}<line x1="230" y1="113" x2="230" y2="97" stroke="#6A4A30" stroke-width=".9"/>` + jet(276, 108, 1.1));
+        fx.push(`<path class="flg" style="--d:-.3s;transform-origin:230px 98px" d="M230 97 L240 98.5 L240 100.5 L230 101 Z" fill="#E8783A" stroke="#5A3A28" stroke-width=".5"/>`); }
+      if (h.apex) { o.push(`<g stroke="#7A5434" stroke-width="1.2"><line x1="88" y1="124" x2="88" y2="80"/><line x1="122" y1="124" x2="122" y2="80"/></g><g stroke="#8A6440" stroke-width=".6"><line x1="88" y1="96" x2="122" y2="96"/><line x1="88" y1="110" x2="122" y2="110"/></g><line x1="112" y1="81" x2="112" y2="88" stroke="#3A3434" stroke-width=".6"/><path d="M110 88 h4 l-2 3 Z" fill="#3A3434"/>`);
+        o.push(apex(105, 124, .95) + `<rect x="84" y="78" width="42" height="3" fill="#B08A5A" ${INK}/>${snow ? '<rect x="84" y="77.2" width="42" height="1.4" fill="#FFFDF8"/>' : ''}${glow(121, 79, 2.6, '#FFB060', .5)}<circle cx="121" cy="79" r="1" fill="#FFE07A"/>`); }
+    },
+    front(o, h, snow) {   // 길가: 망령 등불 사당과 망령 포수
+      if (!h.wr) return;
+      o.push(`${sh(156, 132, 12, 1.2)}<rect x="151" y="124" width="9" height="8" fill="#C8BCA8" ${INK}/><path d="M149.5 124.5 L155.5 119 L161.5 124.5 Z" fill="#7A6A5A" ${INK}/>${snow ? '<path d="M150.5 123.6 L155.5 119.2 L160.5 123.6 L155.5 121.2 Z" fill="#FFFDF8"/>' : ''}<rect x="153.6" y="126" width="3.8" height="4" fill="#1E3E40"/>${glow(155.5, 128, 6, '#7AE8D8', .5)}<path d="M155.5 130 q-1.4 -1.6 0 -3.4 q1.4 1.8 0 3.4 Z" fill="#C8FFF4"/>`);
+      o.push(wraith(170, 131, .85));
+    },
+  };
+})();
 function villageScene() {   // 낮의 마을 — 노을 지는 황금빛 시골. 시설을 올리면 자라고, 계절은 전장과 같다
   const season = SEASONS[S.cycle % 4], H = S.house, w = S.forecast || 'clear', W = WEATHER[w];
   const p = { base: { s1: '#7FA8D0', s2: '#F2C894', s3: '#FFB25A', far: '#7A8466', forest: '#3E5636', f1: '#D8B060', f2: '#BE9444', gr: '#8EAA56', t1: '#5A8A42', t2: '#3E6A34', leaf: '#3E5A2E', fl: ['#FFFFFF', '#F6D460', '#E86A6A'] },
@@ -6482,6 +6525,7 @@ function villageScene() {   // 낮의 마을 — 노을 지는 황금빛 시골.
   const ink = (wd) => `stroke="${INKW}" stroke-width="${wd || .6}" stroke-opacity=".55" stroke-linejoin="round" stroke-linecap="round"`;
   const sh = (x, y, len, h2) => `<ellipse cx="${x + len / 2}" cy="${y}" rx="${len / 2}" ry="${h2 || 2}" fill="#3A2418" opacity=".22"/>`;   // 해를 등진 긴 그림자
   const o = [], fx = [];
+  const has3 = t => S.roster.some(u => u.type === t), h3 = { apex: has3('apex'), ark: has3('ark'), ann: has3('annihilator'), wr: has3('wraithsniper') };   // 3차 융합 유닛은 마을 시설로 자리 잡는다
   const cloud = (x, y, k) => `<g><ellipse cx="${x}" cy="${y}" rx="${22 * k}" ry="${6 * k}" fill="#C8B4C4" opacity=".75" filter="url(#vBleed)"/><ellipse cx="${x - 12 * k}" cy="${y + 1 * k}" rx="${12 * k}" ry="${4.4 * k}" fill="#D8C0C8" opacity=".8"/><ellipse cx="${x + 13 * k}" cy="${y + 1.5 * k}" rx="${13 * k}" ry="${4.4 * k}" fill="#D0B8C4" opacity=".8"/><ellipse cx="${x - 3 * k}" cy="${y + 4 * k}" rx="${24 * k}" ry="${2.6 * k}" fill="#FFD48A" opacity=".85"/></g>`;
   const roundTree = (x, y, k) => `<rect x="${x - 1.4 * k}" y="${y - 2 * k}" width="${2.8 * k}" height="${9 * k}" fill="#5A3E28"/><circle cx="${x}" cy="${y - 8 * k}" r="${8 * k}" fill="${p.t2}"/><circle cx="${x - 2.5 * k}" cy="${y - 9.5 * k}" r="${6 * k}" fill="${p.t1}"/><path d="M${x - 8 * k} ${y - 8 * k} a${8 * k} ${8 * k} 0 0 1 ${5 * k} -${7 * k}" fill="none" stroke="#FFD27A" stroke-width="${1.6 * k}" opacity=".55"/>${snow ? `<path d="M${x - 7 * k} ${y - 12 * k} q${7 * k} -${6 * k} ${14 * k} 0 q-${7 * k} -${2 * k} -${14 * k} 0 Z" fill="#FFFDF8"/>` : ''}${bloom ? [0, 1, 2, 3, 4].map(q => `<circle cx="${x - 6 * k + q * 3 * k}" cy="${y - 7 * k - (q % 2) * 4 * k}" r="${1.3 * k}" fill="#F7B8CF"/>`).join('') : ''}`;
   const bale = (x, y, r) => `${sh(x, y + r * .9, r * 4.5, r * .35)}<rect x="${x - r * .9}" y="${y - r}" width="${r * 1.8}" height="${r * 1.9}" rx="${r * .3}" fill="#C8963E" ${ink(.5)}/><ellipse cx="${x - r * .9}" cy="${y - .05 * r}" rx="${r * .55}" ry="${r * .95}" fill="#E8C070" ${ink(.5)}/><path d="M${x - r * .9} ${y - r * .55} q${r * .3} ${r * .55} 0 ${r * 1.1}" fill="none" stroke="#B08030" stroke-width=".5"/><path d="M${x - r * .6} ${y - r} h${r * 1.4}" stroke="#FFE2A0" stroke-width=".8" opacity=".7"/>`;
@@ -6517,6 +6561,7 @@ function villageScene() {   // 낮의 마을 — 노을 지는 황금빛 시골.
   o.push(roundTree(118, 104, .9) + roundTree(256, 104, .8) + roundTree(344, 110, 1.1));
   o.push(`<path d="M0 124 Q90 116 180 120 T360 118 V150 H0 Z" fill="${p.gr}"/>`);
   o.push(`<path d="M166 150 Q176 136 187 124 L198 124 Q197 136 210 150 Z" fill="${snow ? '#D8CCC4' : '#D8B07A'}" ${ink(.4)}/><path d="M188 150 Q190 137 192 124" fill="none" stroke="#FFF2D0" stroke-width=".8" opacity=".45" stroke-dasharray="3 3"/>`);
+  VS3ART.back(o, fx, h3, snow);
   // 시설
   if (H.scout) { o.push(`<rect x="38" y="80" width="2" height="30" fill="#5A3E28"/>`); fx.push(`<path class="flg" style="--d:-.4s;transform-origin:40px 82px" d="M40 81 h15 l-4 5 l4 5 h-15 Z" fill="#4E7AB0" stroke="${INKW}" stroke-width=".5"/>`); if (H.scout >= 2) o.push(`<rect x="31" y="98" width="16" height="2" fill="#7A5A3A"/><line x1="34" y1="100" x2="33" y2="110" stroke="#6A4A30" stroke-width="1.2"/><line x1="44" y1="100" x2="45" y2="110" stroke="#6A4A30" stroke-width="1.2"/><rect x="41" y="94" width="7" height="2.4" rx="1" fill="#3A3434" transform="rotate(-20 44 95)"/>`); }
   for (let k = 0; k < (H.barracks || 0); k++) { const x = 72 + k * 13, y = 123 - (k % 2) * 3; o.push(`${sh(x + 6, y, 14, 1.6)}<path d="M${x - 8} ${y} L${x} ${y - 13} L${x + 8} ${y} Z" fill="#EEDAAE" ${ink()}/><path d="M${x} ${y - 13} L${x + 8} ${y} L${x + 1} ${y} Z" fill="#B89E7A" opacity=".8"/><path d="M${x - 8} ${y} L${x} ${y - 13}" stroke="#FFE2A8" stroke-width=".9" opacity=".7"/><path d="M${x - 2} ${y} L${x} ${y - 5} L${x + 2} ${y} Z" fill="#5A3E2E"/>${snow ? `<path d="M${x - 3} ${y - 9} L${x} ${y - 13} L${x + 3} ${y - 9} Z" fill="#FFFDF8"/>` : ''}`); }
@@ -6554,6 +6599,7 @@ function villageScene() {   // 낮의 마을 — 노을 지는 황금빛 시골.
   if (hasA) o.push(`${sh(214, 136, 12, 1)}<g fill="#6A4630" stroke="${INKW}" stroke-width=".4"><ellipse cx="214" cy="133" rx="4" ry="2.6"/><circle cx="217.5" cy="129.6" r="2.1"/><path d="M216.4 128 l.6 -2.4 l1.2 1.8 Z"/><rect x="212" y="134.5" width="1.3" height="2.4"/><rect x="215.6" y="134.5" width="1.3" height="2.4"/></g>`);
   if (hasM) o.push(`${sh(225, 137, 10, 1)}<g stroke="${INKW}" stroke-width=".4"><rect x="222" y="128" width="7" height="7" rx="1.2" fill="#9AA0A6"/><rect x="223" y="124.5" width="5" height="3.6" rx="1" fill="#B4BAC0"/><circle cx="225.5" cy="126.3" r=".9" fill="#5BE08A" stroke="none"/></g>`);
   if (fall) o.push(`<circle cx="104" cy="134" r="2.6" fill="#E8862E" ${ink(.4)}/><circle cx="110" cy="135" r="2" fill="#D9682A" ${ink(.4)}/>`);
+  VS3ART.front(o, h3, snow);
   // 앞쪽: 나무 울타리 · 들꽃 · 풀 · 나뭇가지 틀
   o.push(`<g ${ink(.6)}><rect x="4" y="128" width="5" height="22" fill="#7A5A3E"/><rect x="40" y="132" width="4.4" height="18" fill="#6E5036"/><path d="M0 136 L46 133 L46 137 L0 140 Z" fill="#8A6A48"/><path d="M0 144 L46 141 L46 144.6 L0 147.6 Z" fill="#7A5A3E"/><rect x="336" y="130" width="5" height="20" fill="#7A5A3E"/><path d="M318 137 L360 134 L360 138 L318 141 Z" fill="#8A6A48"/></g>`);
   o.push(`<g stroke="#4E6A34" stroke-width=".7" opacity=".75">${[...Array(26)].map(() => { const x = R() * 360; if (x > 150 && x < 220) return ''; return `<path d="M${x.toFixed(0)} 150 q${(R() * 4 - 2).toFixed(1)} -6 ${(R() * 6 - 3).toFixed(1)} -${(8 + R() * 8).toFixed(0)}"/>`; }).join('')}</g>`);
@@ -6578,7 +6624,7 @@ function villageScene() {   // 낮의 마을 — 노을 지는 황금빛 시골.
     <radialGradient id="vWarm" cx=".18" cy=".6" r=".95"><stop offset="0" stop-color="#FFC870" stop-opacity=".32"/><stop offset=".55" stop-color="#FFB060" stop-opacity=".08"/><stop offset="1" stop-color="#FFB060" stop-opacity="0"/></radialGradient>
     <radialGradient id="vvig" cx=".45" cy=".55" r=".8"><stop offset=".6" stop-color="#3A2010" stop-opacity="0"/><stop offset="1" stop-color="#2A160A" stop-opacity=".38"/></radialGradient></defs>
     <g filter="url(#vRough)">${o.join('')}</g><rect width="360" height="150" fill="url(#vWarm)"/><rect width="360" height="150" filter="url(#vPaper)"/><rect width="360" height="150" fill="url(#vvig)"/></svg>`;
-  const key = ['g', eclipse ? 'ecl' : '', season, H.wall, H.tower, H.barracks, H.infirm, H.scout, houses, people, hasA, hasM, seed0].join('|');
+  const key = ['g', eclipse ? 'ecl' : '', season, h3.apex, h3.ark, h3.ann, h3.wr, H.wall, H.tower, H.barracks, H.infirm, H.scout, houses, people, hasA, hasM, seed0].join('|');
   const cached = vsCache.key === key && vsCache.url;
   if (!cached && vsCache.pending !== key) bakeScene(key, baseSvg);
   return `<div class="vscene season-${season}" style="--t0:-${(performance.now() / 1000).toFixed(2)}s">
